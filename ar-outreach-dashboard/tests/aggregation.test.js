@@ -28,6 +28,7 @@ function formatInZone(date, timeZone, pattern) {
   throw new Error('Utilities.formatDate stub does not support ' + pattern);
 }
 
+// Each test installs its own Sheets / CacheService fakes on the context (see fakeSheets below).
 const server = vm.createContext({
   console,
   Utilities: { formatDate: formatInZone }
@@ -142,6 +143,131 @@ test('missing required columns raise a clear error; empty sheet is fine', () => 
   assert.strictEqual(empty.last_updated, null);
   const headerOnly = plain(server.buildPayload_([HEADER], { now: new Date(0) }));
   deepEqual(headerOnly.rows, []);
+});
+
+/* ---------- server: reading the sheet through the Sheets Advanced Service ---------- */
+
+const SHEET_ID = '13ZrIQkxulhjES49I8i36VtJ-jiY_A_kv1NxraHERrYs';
+
+/** Fake of the Sheets v4 Advanced Service: Spreadsheets.get + Spreadsheets.Values.get. */
+function fakeSheets({ tabs, values, timeZone = 'America/Phoenix' }) {
+  const calls = { get: [], values: [] };
+  const valueRange = { range: 'messages!A1:Q9', majorDimension: 'ROWS' };
+  if (values !== undefined) valueRange.values = values;
+  const service = {
+    Spreadsheets: {
+      get: (id, opts) => {
+        calls.get.push({ id, opts });
+        return { properties: { timeZone }, sheets: tabs.map((p) => ({ properties: p })) };
+      },
+      Values: {
+        get: (id, range, opts) => {
+          calls.values.push({ id, range, opts });
+          return JSON.parse(JSON.stringify(valueRange));
+        }
+      }
+    }
+  };
+  return { service, calls };
+}
+
+function fakeCache() {
+  const store = new Map();
+  return {
+    get: (k) => (store.has(k) ? store.get(k) : null),
+    put: (k, v) => { store.set(k, v); },
+    getAll: (keys) => Object.fromEntries(keys.filter((k) => store.has(k)).map((k) => [k, store.get(k)])),
+    putAll: (entries) => { Object.entries(entries).forEach(([k, v]) => store.set(k, v)); }
+  };
+}
+
+function installServer(sheetsOpts) {
+  const sheets = fakeSheets(sheetsOpts);
+  const cache = fakeCache();
+  server.Sheets = sheets.service;
+  server.CacheService = { getScriptCache: () => cache };
+  return sheets.calls;
+}
+
+const MESSAGES_TAB = { sheetId: 2122950652, title: 'messages' };
+
+// Sheets API shape: UNFORMATTED_VALUE gives real booleans, FORMATTED_STRING gives date strings,
+// trailing empty cells are omitted and empty rows come back as [].
+const apiValues = [
+  HEADER,
+  ['acti_SECRET2', 'email', 'Jasmine Bosley', 'user_1', 'lead_SECRET2', 'Synthetic Lead Beta',
+    '2026-10-06T16:00:00.000Z', '2026-10-06', '2026-10-05', '2026-10', 'Template with +1 555 0100',
+    true, true, '2026-10-06T17:00:00.000Z', true, '2026-10-06T18:00:00.000Z', '2026-10-07T13:00:00.000Z'],
+  ['', 'sms', 'Myles Thompson', '', '', '', '', '2026-10-07', '', '', '', false],
+  [],
+  ['', 'email', 'Crystal Belmontes', '', '', '', '', '2026-10-01', '2026-09-28', '2026-10', '', true, false,
+    '', false, '', '2026-10-02T13:00:00.000Z'],
+  ['', 'sms']
+];
+
+test('padRows_ pads ragged API rows to the widest row', () => {
+  deepEqual(server.padRows_([['a', 'b', 'c'], ['x'], []]), [['a', 'b', 'c'], ['x', '', ''], ['', '', '']]);
+  deepEqual(server.padRows_([]), []);
+});
+
+test('getDashboardData reads the gid tab via Sheets with unformatted values and string dates', () => {
+  const calls = installServer({ tabs: [{ sheetId: 0, title: 'Summary' }, MESSAGES_TAB], values: apiValues });
+  const p = plain(server.getDashboardData(true));
+
+  assert.strictEqual(calls.get.length, 1);
+  assert.strictEqual(calls.get[0].id, SHEET_ID);
+  assert.match(calls.get[0].opts.fields, /sheets\.properties\(sheetId,title\)/);
+  deepEqual(calls.values, [{ id: SHEET_ID, range: "'messages'",
+    opts: { valueRenderOption: 'UNFORMATTED_VALUE', dateTimeRenderOption: 'FORMATTED_STRING' } }]);
+
+  assert.strictEqual(p.from_cache, false);
+  assert.strictEqual(p.row_count, 3);
+  assert.strictEqual(p.skipped_rows, 1, 'row with a channel but no date is skipped; [] row ignored');
+  deepEqual(p.rows, [
+    ['email', 'Jasmine Bosley', '2026-10-06', '2026-10-05', '2026-10', true, true, true],
+    // Ragged row: missing opened / responded / last_checked read as blank; week and month derived.
+    ['sms', 'Myles Thompson', '2026-10-07', '2026-10-05', '2026-10', false, false, false],
+    ['email', 'Crystal Belmontes', '2026-10-01', '2026-09-28', '2026-10', true, false, false]
+  ]);
+  assert.strictEqual(p.last_updated, '2026-10-07T13:00:00.000Z');
+  deepEqual(Object.keys(p).sort(),
+    ['fields', 'from_cache', 'generated_at', 'last_updated', 'row_count', 'rows', 'skipped_rows']);
+  const json = JSON.stringify(p);
+  ['acti_SECRET2', 'lead_SECRET2', 'Synthetic Lead Beta', 'Template with +1 555 0100', 'user_1']
+    .forEach((s) => assert.ok(!json.includes(s), 'leaked: ' + s));
+});
+
+test('getDashboardData serves the cache until forceRefresh', () => {
+  const calls = installServer({ tabs: [MESSAGES_TAB], values: apiValues });
+  const first = plain(server.getDashboardData());
+  const second = plain(server.getDashboardData());
+  assert.strictEqual(first.from_cache, false);
+  assert.strictEqual(second.from_cache, true);
+  deepEqual(second.rows, first.rows);
+  assert.strictEqual(calls.values.length, 1, 'second call must not re-read the sheet');
+  assert.strictEqual(plain(server.getDashboardData(true)).from_cache, false);
+  assert.strictEqual(calls.values.length, 2);
+});
+
+test('tab lookup: gid wins, then the "messages" title, else a clear error; titles are quoted', () => {
+  let calls = installServer({ tabs: [{ sheetId: 1, title: 'messages' }, { sheetId: 2122950652, title: "Rep's log" }],
+    values: apiValues });
+  server.getDashboardData(true);
+  assert.strictEqual(calls.values[0].range, "'Rep''s log'");
+
+  calls = installServer({ tabs: [{ sheetId: 0, title: 'Summary' }, { sheetId: 99, title: 'messages' }], values: apiValues });
+  server.getDashboardData(true);
+  assert.strictEqual(calls.values[0].range, "'messages'");
+
+  installServer({ tabs: [{ sheetId: 0, title: 'Summary' }], values: apiValues });
+  assert.throws(() => server.getDashboardData(true), /Could not find the messages tab/);
+});
+
+test('an empty tab (API omits values) yields an empty payload', () => {
+  installServer({ tabs: [MESSAGES_TAB] });
+  const p = plain(server.getDashboardData(true));
+  assert.strictEqual(p.row_count, 0);
+  assert.strictEqual(p.last_updated, null);
 });
 
 /* ---------- client: expand + bucketing ---------- */

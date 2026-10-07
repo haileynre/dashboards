@@ -55,37 +55,58 @@ function getDashboardData(forceRefresh) {
     }
   }
 
-  var ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  var sheet = getMessagesSheet_(ss);
-  var lastRow = sheet.getLastRow();
-  var lastCol = sheet.getLastColumn();
-  var values = lastRow > 0 && lastCol > 0
-    ? sheet.getRange(1, 1, lastRow, lastCol).getValues()
-    : [];
+  // Sheets Advanced Service, not SpreadsheetApp: SpreadsheetApp refuses the
+  // spreadsheets.readonly scope, and this app must stay read-only.
+  var meta = Sheets.Spreadsheets.get(CONFIG.SHEET_ID, {
+    fields: 'properties.timeZone,sheets.properties(sheetId,title)'
+  });
+  var title = getMessagesSheetTitle_(meta);
+  var range = "'" + title.replace(/'/g, "''") + "'";
+  var response = Sheets.Spreadsheets.Values.get(CONFIG.SHEET_ID, range, {
+    valueRenderOption: 'UNFORMATTED_VALUE',
+    dateTimeRenderOption: 'FORMATTED_STRING'
+  });
+  var values = padRows_((response && response.values) || []);
 
   var payload = buildPayload_(values, {
     now: new Date(),
-    sheetTimeZone: ss.getSpreadsheetTimeZone() || CONFIG.TIME_ZONE
+    sheetTimeZone: (meta && meta.properties && meta.properties.timeZone) || CONFIG.TIME_ZONE
   });
   writeCache_(cache, payload);
   payload.from_cache = false;
   return payload;
 }
 
-function getMessagesSheet_(ss) {
-  var sheets = ss.getSheets();
+/** Title of the tab with gid CONFIG.SHEET_GID, else the one named SHEET_NAME_FALLBACK. */
+function getMessagesSheetTitle_(meta) {
+  var sheets = (meta && meta.sheets) || [];
+  var byName = null;
   for (var i = 0; i < sheets.length; i++) {
-    if (sheets[i].getSheetId() === CONFIG.SHEET_GID) return sheets[i];
+    var p = sheets[i].properties || {};
+    if (p.sheetId === CONFIG.SHEET_GID) return p.title;
+    if (byName === null && p.title === CONFIG.SHEET_NAME_FALLBACK) byName = p.title;
   }
-  var byName = ss.getSheetByName(CONFIG.SHEET_NAME_FALLBACK);
-  if (byName) return byName;
+  if (byName !== null) return byName;
   throw new Error('Could not find the messages tab (gid ' + CONFIG.SHEET_GID +
     ' or name "' + CONFIG.SHEET_NAME_FALLBACK + '") in the dashboard spreadsheet.');
 }
 
+/** The Sheets API omits trailing empty cells; pad every row to the widest row with ''. */
+function padRows_(values) {
+  var width = 0;
+  for (var i = 0; i < values.length; i++) {
+    if (values[i] && values[i].length > width) width = values[i].length;
+  }
+  return values.map(function (row) {
+    var out = (row || []).slice();
+    while (out.length < width) out.push('');
+    return out;
+  });
+}
+
 /**
  * Pure transform from sheet values (header row + data rows) to the browser payload.
- * @param {Array<Array<*>>} values  getValues() output, header in row 0.
+ * @param {Array<Array<*>>} values  padded Values.get output, header in row 0.
  * @param {{now: Date, sheetTimeZone: string}} opts
  */
 function buildPayload_(values, opts) {

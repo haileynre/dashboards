@@ -72,7 +72,7 @@ the cache, re-reads the sheet and re-caches the result.
 ```
 ar-outreach-dashboard/
 ├── src/                      ← everything clasp pushes (rootDir)
-│   ├── appsscript.json       manifest: V8, America/Phoenix, DOMAIN access, execute as deployer, spreadsheets.readonly
+│   ├── appsscript.json       manifest: V8, America/Phoenix, DOMAIN access, execute as deployer, spreadsheets.readonly, Sheets advanced service
 │   ├── Code.gs               CONFIG, doGet, include(), getDashboardData(forceRefresh), privacy filter, chunked cache
 │   ├── Index.html            page markup; pulls in Styles / Metrics / App with <?!= include() ?>; Chart.js 4.4.1 from jsDelivr (SRI-pinned)
 │   ├── Styles.html           CSS (responsive; no framework)
@@ -122,6 +122,13 @@ The web app runs as the deployer, so the deployer must grant the
    screen. If it shows "unverified app", choose *Advanced → Go to …*; it's an internal script.
 
 Deploying from the editor UI also prompts for this. Deploying with clasp alone does not.
+
+> **Why the Sheets Advanced Service:** `Code.gs` reads the tab with `Sheets.Spreadsheets`
+> (Sheets API v4, enabled in `appsscript.json`) instead of `SpreadsheetApp`, because
+> `SpreadsheetApp` rejects the `spreadsheets.readonly` scope and demands full read/write
+> access. Any change to `oauthScopes` or `enabledAdvancedServices` invalidates the existing
+> grant: re-run `getDashboardData` in the editor and accept the consent screen again before
+> the web app will load.
 
 ### (a) With clasp
 
