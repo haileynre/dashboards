@@ -1,0 +1,511 @@
+<script>
+(function () {
+  'use strict';
+
+  var REP_COLORS = ['#4f46e5', '#0d9488', '#ea580c'];
+  var EXTRA_COLORS = ['#64748b', '#a21caf', '#0891b2', '#b45309', '#be185d'];
+  var METRIC_COLORS = { emailsSent: '#2563eb', smsSent: '#9333ea', responses: '#16a34a' };
+  var METRIC_LABELS = {
+    total: 'All messages sent',
+    emailsSent: 'Emails sent',
+    smsSent: 'SMS sent',
+    responses: 'Responses'
+  };
+
+  var KPIS = [
+    { key: 'emailsSent', label: 'Emails sent', kind: 'count',
+      sub: function () { return 'Outbound emails'; } },
+    { key: 'emailsOpened', label: 'Emails opened', kind: 'count',
+      sub: function (s) { return Metrics.formatPct(s.openRate) + ' of emails sent'; } },
+    { key: 'emailsResponded', label: 'Emails responded', kind: 'count',
+      sub: function () { return 'Reply within 7 days'; } },
+    { key: 'smsSent', label: 'SMS sent', kind: 'count',
+      sub: function () { return 'Outbound texts'; } },
+    { key: 'smsResponded', label: 'SMS responded', kind: 'count',
+      sub: function () { return 'Reply within 7 days'; } },
+    { key: 'openRate', label: 'Open rate', kind: 'rate',
+      sub: function (s) { return Metrics.formatInt(s.emailsOpened) + ' of ' + Metrics.formatInt(s.emailsSent) + ' emails'; } },
+    { key: 'responseRate', label: 'Response rate', kind: 'rate',
+      sub: function (s) { return Metrics.formatInt(s.totalResponded) + ' of ' + Metrics.formatInt(s.totalSent) + ' email + SMS'; } }
+  ];
+
+  var state = {
+    loaded: false,
+    loading: false,
+    payload: null,
+    rows: [],
+    users: [],
+    selected: {},
+    filters: { preset: 'last30', start: null, end: null, mode: 'all' },
+    grain: 'day',
+    chartType: 'line',
+    stackByUser: false,
+    stackMetric: 'total',
+    userChartMode: 'counts'
+  };
+  var charts = { userChart: null, trendChart: null };
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function hexToRgba(hex, alpha) {
+    var n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + alpha + ')';
+  }
+
+  function userColor(user) {
+    var i = state.users.indexOf(user);
+    var repIndex = Metrics.REPS.indexOf(user);
+    if (repIndex >= 0) return REP_COLORS[repIndex];
+    return EXTRA_COLORS[Math.max(0, i - Metrics.REPS.length) % EXTRA_COLORS.length];
+  }
+
+  function selectedUsers() {
+    return state.users.filter(function (u) { return state.selected[u]; });
+  }
+
+  function formatTimestamp(iso) {
+    if (!iso) return '\u2014';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '\u2014';
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: Metrics.TIME_ZONE, month: 'short', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit'
+    }).format(d) + ' MST';
+  }
+
+  /* ---------- segmented controls ---------- */
+
+  function bindSegmented(id, attr, onPick) {
+    $(id).addEventListener('click', function (e) {
+      var btn = e.target.closest('button[' + attr + ']');
+      if (btn) onPick(btn.getAttribute(attr));
+    });
+  }
+
+  function syncSegmented(id, attr, value) {
+    var buttons = $(id).querySelectorAll('button[' + attr + ']');
+    Array.prototype.forEach.call(buttons, function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute(attr) === value));
+    });
+  }
+
+  function syncControls() {
+    syncSegmented('presetGroup', 'data-preset', state.filters.preset);
+    syncSegmented('modeGroup', 'data-mode', state.filters.mode);
+    syncSegmented('grainGroup', 'data-value', state.grain);
+    syncSegmented('chartTypeGroup', 'data-value', state.chartType);
+    syncSegmented('userChartMode', 'data-value', state.userChartMode);
+    $('startDate').value = state.filters.start || '';
+    $('endDate').value = state.filters.end || '';
+    $('stackByUser').checked = state.stackByUser;
+    $('stackMetric').value = state.stackMetric;
+    $('stackMetric').hidden = !state.stackByUser;
+  }
+
+  /* ---------- filters ---------- */
+
+  function applyPreset(preset) {
+    var range = Metrics.presetRange(preset, Metrics.todayKey());
+    state.filters.preset = preset;
+    state.filters.start = range.start;
+    state.filters.end = range.end;
+  }
+
+  function onDateInput() {
+    var start = $('startDate').value || null;
+    var end = $('endDate').value || null;
+    if (start && end && start > end) { var t = start; start = end; end = t; }
+    state.filters.preset = start || end ? 'custom' : 'all';
+    state.filters.start = start;
+    state.filters.end = end;
+    update();
+  }
+
+  function buildUserChips() {
+    var html = state.users.map(function (u) {
+      var on = !!state.selected[u];
+      return '<label class="chip' + (on ? '' : ' is-off') + '">' +
+        '<input type="checkbox" data-user="' + escapeHtml(u) + '"' + (on ? ' checked' : '') + '>' +
+        '<span class="swatch" style="background:' + userColor(u) + '"></span>' +
+        escapeHtml(u) + '</label>';
+    }).join('');
+    $('userChips').innerHTML = html;
+  }
+
+  /* ---------- rendering ---------- */
+
+  function buildKpiShells() {
+    $('kpiGrid').innerHTML = KPIS.map(function (k) {
+      return '<div class="card kpi" data-kpi="' + k.key + '">' +
+        '<div class="kpi-label">' + escapeHtml(k.label) + '</div>' +
+        '<div class="kpi-value">0</div>' +
+        '<div class="kpi-sub">&nbsp;</div>' +
+        '<div class="kpi-delta">&nbsp;</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function renderKpis(current, previous, prevRange) {
+    KPIS.forEach(function (k) {
+      var card = $('kpiGrid').querySelector('[data-kpi="' + k.key + '"]');
+      var value = current[k.key];
+      card.querySelector('.kpi-value').textContent =
+        k.kind === 'rate' ? Metrics.formatPct(value) : Metrics.formatInt(value);
+      card.querySelector('.kpi-sub').textContent = k.sub(current);
+
+      var delta = card.querySelector('.kpi-delta');
+      if (!previous) {
+        delta.className = 'kpi-delta na';
+        delta.innerHTML = '<span class="vs">Set a date range to compare</span>';
+        delta.title = '';
+        return;
+      }
+      var c = Metrics.change(value, previous[k.key], k.kind);
+      var prevText = k.kind === 'rate' ? Metrics.formatPct(previous[k.key]) : Metrics.formatInt(previous[k.key]);
+      delta.className = 'kpi-delta ' + c.dir;
+      delta.innerHTML = escapeHtml(c.label) + ' <span class="vs">vs prev. ' + prevRange.days +
+        (prevRange.days === 1 ? ' day' : ' days') + '</span>';
+      delta.title = 'Previous period ' + Metrics.formatRange(prevRange.start, prevRange.end) + ': ' + prevText;
+    });
+  }
+
+  function renderSummary(filtered, prevRange) {
+    var f = state.filters;
+    var users = selectedUsers();
+    var modeText = { all: 'sequence + manual', sequence: 'sequence only', manual: 'manual only' }[f.mode];
+    var parts = [
+      Metrics.formatInt(filtered.length) + ' messages',
+      f.start && f.end ? Metrics.formatRange(f.start, f.end)
+        : f.start ? 'From ' + Metrics.formatDateKey(f.start, true)
+        : f.end ? 'Through ' + Metrics.formatDateKey(f.end, true)
+        : 'All time',
+      users.length + ' of ' + state.users.length + ' reps',
+      modeText
+    ];
+    if (prevRange) parts.push('compared with ' + Metrics.formatRange(prevRange.start, prevRange.end));
+    $('filterSummary').textContent = 'Showing ' + parts.join(' \u00b7 ');
+  }
+
+  function setChartNote(canvasId, text) {
+    var note = $(canvasId).parentNode.querySelector('.chart-note');
+    note.textContent = text || '';
+    note.hidden = !text;
+  }
+
+  function drawChart(canvasId, config, emptyText) {
+    if (charts[canvasId]) {
+      charts[canvasId].destroy();
+      charts[canvasId] = null;
+    }
+    if (typeof window.Chart === 'undefined') {
+      setChartNote(canvasId, 'Charts are unavailable because Chart.js could not be loaded from cdn.jsdelivr.net. The numbers above and the table are still accurate.');
+      return;
+    }
+    if (!config) {
+      setChartNote(canvasId, emptyText || 'No data for these filters.');
+      return;
+    }
+    setChartNote(canvasId, '');
+    charts[canvasId] = new window.Chart($(canvasId), config);
+  }
+
+  function baseOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 250 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 16 } }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#eef1f6' } }
+      }
+    };
+  }
+
+  function renderUsers(filtered) {
+    var users = selectedUsers();
+    var stats = Metrics.byUser(filtered, users);
+    var total = Metrics.summarize(filtered);
+
+    var cells = function (s) {
+      return '<td class="num">' + Metrics.formatInt(s.emailsSent) + '</td>' +
+        '<td class="num">' + Metrics.formatInt(s.emailsOpened) + '</td>' +
+        '<td class="num">' + Metrics.formatInt(s.emailsResponded) + '</td>' +
+        '<td class="num">' + Metrics.formatInt(s.smsSent) + '</td>' +
+        '<td class="num">' + Metrics.formatInt(s.smsResponded) + '</td>' +
+        '<td class="num">' + Metrics.formatPct(s.openRate) + '</td>' +
+        '<td class="num">' + Metrics.formatPct(s.responseRate) + '</td>';
+    };
+    $('userTable').querySelector('tbody').innerHTML = stats.length
+      ? stats.map(function (s) {
+        return '<tr><td><span class="swatch" style="background:' + userColor(s.user) + '"></span>' +
+          escapeHtml(s.user) + '</td>' + cells(s) + '</tr>';
+      }).join('')
+      : '<tr><td colspan="8" class="muted">No reps selected.</td></tr>';
+    $('userTable').querySelector('tfoot').innerHTML = stats.length > 1
+      ? '<tr><td>All selected reps</td>' + cells(total) + '</tr>'
+      : '';
+
+    if (!users.length || !filtered.length) {
+      drawChart('userChart', null, users.length ? 'No messages match these filters.' : 'Select at least one rep.');
+      return;
+    }
+
+    var rates = state.userChartMode === 'rates';
+    var metricKeys = rates
+      ? ['openRate', 'responseRate']
+      : ['emailsSent', 'emailsOpened', 'emailsResponded', 'smsSent', 'smsResponded'];
+    var labels = rates
+      ? ['Open rate', 'Response rate']
+      : ['Emails sent', 'Emails opened', 'Emails responded', 'SMS sent', 'SMS responded'];
+
+    var options = baseOptions();
+    if (rates) {
+      options.scales.y.ticks = { callback: function (v) { return v + '%'; } };
+      options.plugins.tooltip = {
+        callbacks: {
+          label: function (ctx) {
+            return ctx.dataset.label + ': ' + (ctx.raw === null ? '\u2014' : ctx.raw.toFixed(1) + '%');
+          }
+        }
+      };
+    }
+
+    drawChart('userChart', {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: stats.map(function (s) {
+          var color = userColor(s.user);
+          return {
+            label: s.user,
+            data: metricKeys.map(function (k) {
+              if (!rates) return s[k];
+              return s[k] === null ? null : Math.round(s[k] * 1000) / 10;
+            }),
+            backgroundColor: hexToRgba(color, 0.85),
+            borderColor: color,
+            borderWidth: 1,
+            borderRadius: 4,
+            maxBarThickness: 48
+          };
+        })
+      },
+      options: options
+    });
+  }
+
+  function renderTrend(filtered) {
+    var users = selectedUsers();
+    $('stackMetric').hidden = !state.stackByUser;
+    if (!filtered.length) {
+      drawChart('trendChart', null, users.length ? 'No messages match these filters.' : 'Select at least one rep.');
+      return;
+    }
+
+    var f = state.filters;
+    var t = Metrics.trend(filtered, state.grain, { start: f.start, end: f.end, users: users });
+    var labels = t.keys.map(function (k) { return Metrics.bucketLabel(k, state.grain); });
+    var isLine = state.chartType === 'line';
+
+    var datasets;
+    if (state.stackByUser) {
+      datasets = users.map(function (u, i) {
+        var color = userColor(u);
+        return {
+          label: u,
+          data: t.byUser[u][state.stackMetric],
+          backgroundColor: hexToRgba(color, isLine ? 0.25 : 0.85),
+          borderColor: color,
+          borderWidth: isLine ? 2 : 1,
+          fill: isLine ? (i === 0 ? 'origin' : '-1') : false,
+          tension: 0.25,
+          cubicInterpolationMode: 'monotone',
+          pointRadius: t.keys.length > 60 ? 0 : 2,
+          borderRadius: isLine ? 0 : 3,
+          maxBarThickness: 40
+        };
+      });
+    } else {
+      datasets = ['emailsSent', 'smsSent', 'responses'].map(function (key) {
+        var color = METRIC_COLORS[key];
+        return {
+          label: METRIC_LABELS[key],
+          data: t.series[key],
+          backgroundColor: hexToRgba(color, isLine ? 0.15 : 0.85),
+          borderColor: color,
+          borderWidth: isLine ? 2 : 1,
+          fill: false,
+          tension: 0.25,
+          cubicInterpolationMode: 'monotone',
+          pointRadius: t.keys.length > 60 ? 0 : 3,
+          borderRadius: isLine ? 0 : 3,
+          maxBarThickness: 32
+        };
+      });
+    }
+
+    var options = baseOptions();
+    options.scales.x.ticks = { autoSkip: true, maxRotation: 0, maxTicksLimit: 12 };
+    if (state.stackByUser) {
+      options.scales.x.stacked = true;
+      options.scales.y.stacked = true;
+      options.plugins.title = { display: true, text: METRIC_LABELS[state.stackMetric] + ' by rep', align: 'start', color: '#667085' };
+    }
+
+    drawChart('trendChart', { type: isLine ? 'line' : 'bar', data: { labels: labels, datasets: datasets }, options: options });
+  }
+
+  function update() {
+    syncControls();
+    if (!state.loaded) return;
+
+    var f = state.filters;
+    var users = selectedUsers();
+    var filter = { start: f.start, end: f.end, users: users, mode: f.mode };
+    var filtered = Metrics.filterRows(state.rows, filter);
+    var prevRange = Metrics.previousRange(f.start, f.end);
+    var previous = null;
+    if (prevRange) {
+      previous = Metrics.summarize(Metrics.filterRows(state.rows, {
+        start: prevRange.start, end: prevRange.end, users: users, mode: f.mode
+      }));
+    }
+
+    renderSummary(filtered, prevRange);
+    renderKpis(Metrics.summarize(filtered), previous, prevRange);
+    renderUsers(filtered);
+    renderTrend(filtered);
+
+    var emptyText = '';
+    if (!state.rows.length) emptyText = 'The messages sheet has no rows yet. Data appears after the next daily refresh (06:00 America/Phoenix).';
+    else if (!users.length) emptyText = 'Select at least one rep to see data.';
+    else if (!filtered.length) emptyText = 'No messages match these filters. Try a wider date range or "All time".';
+    $('emptyMessage').textContent = emptyText;
+    $('emptyBanner').hidden = !emptyText;
+  }
+
+  /* ---------- data loading ---------- */
+
+  function setBusy(busy) {
+    var btn = $('refreshBtn');
+    btn.disabled = busy;
+    btn.classList.toggle('is-busy', busy);
+    btn.querySelector('.btn-label').textContent = busy ? 'Loading\u2026' : 'Refresh';
+    $('content').classList.toggle('is-loading', busy && !state.loaded);
+    $('content').classList.toggle('is-refreshing', busy && state.loaded);
+    $('content').setAttribute('aria-busy', String(busy));
+  }
+
+  function load(force) {
+    if (state.loading) return;
+    state.loading = true;
+    setBusy(true);
+    $('errorBanner').hidden = true;
+
+    var run = window.google && window.google.script && window.google.script.run;
+    if (!run) {
+      onFailure(new Error('google.script.run is not available. Open this page from the Apps Script web app URL.'));
+      return;
+    }
+    run.withSuccessHandler(onData).withFailureHandler(onFailure).getDashboardData(!!force);
+  }
+
+  function onData(payload) {
+    state.loading = false;
+    if (!payload || !Array.isArray(payload.rows) || !Array.isArray(payload.fields)) {
+      onFailure(new Error('The server returned an unexpected response.'));
+      return;
+    }
+    var firstLoad = !state.loaded;
+    state.payload = payload;
+    state.rows = Metrics.expandRows(payload);
+    var users = Metrics.listUsers(state.rows);
+    users.forEach(function (u) {
+      if (firstLoad || state.users.indexOf(u) < 0) state.selected[u] = true;
+    });
+    state.users = users;
+    state.loaded = true;
+
+    $('lastUpdated').textContent = formatTimestamp(payload.last_updated);
+    $('loadedInfo').textContent = 'Page data ' + (payload.from_cache ? 'cached' : 'fetched') + ' ' +
+      formatTimestamp(payload.generated_at).replace(/^.*?, \d{4}, /, '');
+    $('loadedInfo').title = 'Server copy generated ' + formatTimestamp(payload.generated_at) +
+      (payload.from_cache ? ' (served from the 10-minute cache)' : '');
+
+    $('content').hidden = false;
+    $('filters').hidden = false;
+    setBusy(false);
+    buildUserChips();
+    update();
+  }
+
+  function onFailure(err) {
+    state.loading = false;
+    setBusy(false);
+    var message = (err && (err.message || String(err))) || 'Unknown error.';
+    $('errorMessage').textContent = message;
+    $('errorBanner').hidden = false;
+    if (!state.loaded) {
+      $('content').hidden = true;
+      $('filters').hidden = true;
+    }
+  }
+
+  /* ---------- wiring ---------- */
+
+  function init() {
+    if (typeof window.Chart !== 'undefined') {
+      window.Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+      window.Chart.defaults.color = '#475467';
+    }
+    buildKpiShells();
+    applyPreset(state.filters.preset);
+    syncControls();
+
+    bindSegmented('presetGroup', 'data-preset', function (p) { applyPreset(p); update(); });
+    bindSegmented('modeGroup', 'data-mode', function (m) { state.filters.mode = m; update(); });
+    bindSegmented('grainGroup', 'data-value', function (g) { state.grain = g; update(); });
+    bindSegmented('chartTypeGroup', 'data-value', function (t) { state.chartType = t; update(); });
+    bindSegmented('userChartMode', 'data-value', function (m) { state.userChartMode = m; update(); });
+
+    $('startDate').addEventListener('change', onDateInput);
+    $('endDate').addEventListener('change', onDateInput);
+
+    $('userChips').addEventListener('change', function (e) {
+      var u = e.target.getAttribute('data-user');
+      if (u === null) return;
+      state.selected[u] = e.target.checked;
+      e.target.closest('.chip').classList.toggle('is-off', !e.target.checked);
+      update();
+    });
+    $('allUsersBtn').addEventListener('click', function () {
+      state.users.forEach(function (u) { state.selected[u] = true; });
+      buildUserChips();
+      update();
+    });
+
+    $('stackByUser').addEventListener('change', function (e) { state.stackByUser = e.target.checked; update(); });
+    $('stackMetric').addEventListener('change', function (e) { state.stackMetric = e.target.value; update(); });
+
+    $('refreshBtn').addEventListener('click', function () { load(true); });
+    $('retryBtn').addEventListener('click', function () { load(true); });
+
+    load(false);
+  }
+
+  window.Dashboard = { state: state, charts: charts, reload: load };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>

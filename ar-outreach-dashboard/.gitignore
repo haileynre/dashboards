@@ -1,0 +1,31 @@
+# clasp credentials: OAuth tokens, never commit
+.clasprc.json
+**/.clasprc.json
+
+# Dependencies
+node_modules/
+
+# Local data: anything exported from the real sheet stays out of git.
+# (preview/stub.js and tests/ use synthetic rows only.)
+data/
+local/
+real-data/
+exports/
+*.local.*
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.ods
+messages*.json
+
+# Env / secrets
+.env
+.env.*
+secrets.*
+
+# OS / editor noise
+.DS_Store
+*.log
+.idea/
+.vscode/

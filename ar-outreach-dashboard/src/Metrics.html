@@ -1,0 +1,344 @@
+<script>
+/* Pure aggregation helpers (no DOM). Also loaded by tests/aggregation.test.js. */
+var Metrics = (function () {
+  'use strict';
+
+  var TIME_ZONE = 'America/Phoenix';
+  var REPS = ['Jasmine Bosley', 'Myles Thompson', 'Crystal Belmontes'];
+  var DAY_MS = 86400000;
+  var MAX_BUCKETS = 3000;
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  function toBool(v) {
+    if (v === true || v === false) return v;
+    if (typeof v === 'number') return v !== 0;
+    if (v === null || v === undefined) return false;
+    var s = String(v).trim().toLowerCase();
+    return s === 'true' || s === 'yes' || s === 'y' || s === '1';
+  }
+
+  /* ---------- date keys (YYYY-MM-DD, compared as strings) ---------- */
+
+  function isDateKey(s) {
+    return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  }
+
+  function keyToMs(key) {
+    var p = key.split('-');
+    return Date.UTC(+p[0], +p[1] - 1, +p[2]);
+  }
+
+  function msToKey(ms) {
+    return new Date(ms).toISOString().slice(0, 10);
+  }
+
+  function addDays(key, n) {
+    return msToKey(keyToMs(key) + n * DAY_MS);
+  }
+
+  function daysInclusive(start, end) {
+    return Math.round((keyToMs(end) - keyToMs(start)) / DAY_MS) + 1;
+  }
+
+  function mondayOf(key) {
+    var d = new Date(keyToMs(key));
+    return msToKey(d.getTime() - ((d.getUTCDay() + 6) % 7) * DAY_MS);
+  }
+
+  function addMonths(monthKey, n) {
+    var y = +monthKey.slice(0, 4);
+    var m = +monthKey.slice(5, 7) - 1 + n;
+    y += Math.floor(m / 12);
+    m = ((m % 12) + 12) % 12;
+    return y + '-' + (m < 9 ? '0' : '') + (m + 1);
+  }
+
+  function todayKey(now) {
+    var parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(now || new Date());
+    var get = function (t) { return parts.filter(function (p) { return p.type === t; })[0].value; };
+    return get('year') + '-' + get('month') + '-' + get('day');
+  }
+
+  /* ---------- rows ---------- */
+
+  /** Turns the server payload ({fields, rows: [[...]]}) into normalized row objects. */
+  function expandRows(payload) {
+    var fields = (payload && payload.fields) || [];
+    var raw = (payload && payload.rows) || [];
+    var ix = {};
+    fields.forEach(function (f, i) { ix[f] = i; });
+    var pick = function (r, name) { return Array.isArray(r) ? r[ix[name]] : r[name]; };
+
+    var out = [];
+    raw.forEach(function (r) {
+      var date = String(pick(r, 'date') || '').trim();
+      var channel = String(pick(r, 'channel') || '').trim().toLowerCase();
+      if (!isDateKey(date) || (channel !== 'email' && channel !== 'sms')) return;
+      var week = String(pick(r, 'week_start') || '').trim();
+      var month = String(pick(r, 'month') || '').trim();
+      out.push({
+        channel: channel,
+        user_name: String(pick(r, 'user_name') || '').trim() || '(unassigned)',
+        date: date,
+        week_start: isDateKey(week) ? week : mondayOf(date),
+        month: /^\d{4}-\d{2}$/.test(month) ? month : date.slice(0, 7),
+        via_sequence: toBool(pick(r, 'via_sequence')),
+        opened: channel === 'email' && toBool(pick(r, 'opened')),
+        responded: toBool(pick(r, 'responded'))
+      });
+    });
+    return out;
+  }
+
+  /** The three AR reps first (fixed order), then anyone else alphabetically. */
+  function listUsers(rows) {
+    var seen = {};
+    rows.forEach(function (r) { seen[r.user_name] = true; });
+    var others = Object.keys(seen).filter(function (u) { return REPS.indexOf(u) < 0; }).sort();
+    return REPS.concat(others);
+  }
+
+  /**
+   * @param {{start?: string, end?: string, users?: string[]|null, mode?: 'all'|'sequence'|'manual'}} f
+   * users null/undefined = everyone; an empty array = nobody.
+   */
+  function filterRows(rows, f) {
+    f = f || {};
+    var userSet = null;
+    if (Array.isArray(f.users)) {
+      userSet = {};
+      f.users.forEach(function (u) { userSet[u] = true; });
+    }
+    var mode = f.mode || 'all';
+    return rows.filter(function (r) {
+      if (f.start && r.date < f.start) return false;
+      if (f.end && r.date > f.end) return false;
+      if (userSet && !userSet[r.user_name]) return false;
+      if (mode === 'sequence' && !r.via_sequence) return false;
+      if (mode === 'manual' && r.via_sequence) return false;
+      return true;
+    });
+  }
+
+  function ratio(num, den) {
+    return den > 0 ? num / den : null;
+  }
+
+  function summarize(rows) {
+    var s = { emailsSent: 0, emailsOpened: 0, emailsResponded: 0, smsSent: 0, smsResponded: 0 };
+    rows.forEach(function (r) {
+      if (r.channel === 'email') {
+        s.emailsSent++;
+        if (r.opened) s.emailsOpened++;
+        if (r.responded) s.emailsResponded++;
+      } else if (r.channel === 'sms') {
+        s.smsSent++;
+        if (r.responded) s.smsResponded++;
+      }
+    });
+    s.totalSent = s.emailsSent + s.smsSent;
+    s.totalResponded = s.emailsResponded + s.smsResponded;
+    s.openRate = ratio(s.emailsOpened, s.emailsSent);
+    s.responseRate = ratio(s.totalResponded, s.totalSent);
+    return s;
+  }
+
+  function byUser(rows, users) {
+    var groups = {};
+    users.forEach(function (u) { groups[u] = []; });
+    rows.forEach(function (r) { if (groups[r.user_name]) groups[r.user_name].push(r); });
+    return users.map(function (u) {
+      var s = summarize(groups[u]);
+      s.user = u;
+      return s;
+    });
+  }
+
+  /* ---------- periods ---------- */
+
+  function presetRange(preset, today) {
+    switch (preset) {
+      case 'last7': return { start: addDays(today, -6), end: today };
+      case 'last30': return { start: addDays(today, -29), end: today };
+      case 'last90': return { start: addDays(today, -89), end: today };
+      case 'thisMonth': return { start: today.slice(0, 8) + '01', end: today };
+      default: return { start: null, end: null };
+    }
+  }
+
+  /** The period of equal length that ends the day before `start`. */
+  function previousRange(start, end) {
+    if (!isDateKey(start) || !isDateKey(end) || start > end) return null;
+    var days = daysInclusive(start, end);
+    var prevEnd = addDays(start, -1);
+    return { start: addDays(prevEnd, -(days - 1)), end: prevEnd, days: days };
+  }
+
+  /**
+   * kind 'count': percent change; kind 'rate': difference in percentage points.
+   * Returns {dir: 'up'|'down'|'flat'|'na', label}.
+   */
+  function change(current, previous, kind) {
+    if (kind === 'rate') {
+      if (current === null || previous === null || current === undefined || previous === undefined) {
+        return { dir: 'na', label: 'n/a' };
+      }
+      var pts = (current - previous) * 100;
+      if (Math.abs(pts) < 0.05) return { dir: 'flat', label: '0.0 pts' };
+      return { dir: pts > 0 ? 'up' : 'down', label: (pts > 0 ? '+' : '\u2212') + Math.abs(pts).toFixed(1) + ' pts' };
+    }
+    if (!previous) {
+      return current ? { dir: 'up', label: 'new' } : { dir: 'flat', label: 'no change' };
+    }
+    var pct = (current - previous) / previous * 100;
+    if (Math.abs(pct) < 0.05) return { dir: 'flat', label: '0%' };
+    return { dir: pct > 0 ? 'up' : 'down', label: (pct > 0 ? '+' : '\u2212') + Math.abs(pct).toFixed(1) + '%' };
+  }
+
+  /* ---------- trend buckets ---------- */
+
+  function bucketOf(row, grain) {
+    if (grain === 'week') return row.week_start;
+    if (grain === 'month') return row.month;
+    return row.date;
+  }
+
+  /** Every bucket key between two dates (inclusive) so empty periods show as zero. */
+  function bucketRange(start, end, grain) {
+    var keys = [];
+    if (!isDateKey(start) || !isDateKey(end) || start > end) return keys;
+    if (grain === 'month') {
+      var m = start.slice(0, 7);
+      var last = end.slice(0, 7);
+      while (m <= last && keys.length < MAX_BUCKETS) { keys.push(m); m = addMonths(m, 1); }
+    } else if (grain === 'week') {
+      var w = mondayOf(start);
+      while (w <= end && keys.length < MAX_BUCKETS) { keys.push(w); w = addDays(w, 7); }
+    } else {
+      var d = start;
+      while (d <= end && keys.length < MAX_BUCKETS) { keys.push(d); d = addDays(d, 1); }
+    }
+    return keys;
+  }
+
+  function emptySeries(n) {
+    return {
+      emailsSent: zeros(n), smsSent: zeros(n), responses: zeros(n), total: zeros(n)
+    };
+  }
+
+  function zeros(n) {
+    var a = new Array(n);
+    for (var i = 0; i < n; i++) a[i] = 0;
+    return a;
+  }
+
+  /**
+   * @param {string} grain 'day' | 'week' | 'month'
+   * @param {{start?: string, end?: string, users?: string[]}} opts
+   *   start/end pad the axis; defaults to the first and last date present in rows.
+   * @returns {{keys: string[], series: Object, byUser: Object<string, Object>}}
+   */
+  function trend(rows, grain, opts) {
+    opts = opts || {};
+    var start = opts.start;
+    var end = opts.end;
+    if (!start || !end) {
+      var dates = rows.map(function (r) { return r.date; }).sort();
+      start = start || dates[0];
+      end = end || dates[dates.length - 1];
+    }
+
+    var keys = bucketRange(start, end, grain);
+    var known = {};
+    keys.forEach(function (k) { known[k] = true; });
+    rows.forEach(function (r) {
+      var k = bucketOf(r, grain);
+      if (!known[k]) { known[k] = true; keys.push(k); }
+    });
+    keys.sort();
+    var index = {};
+    keys.forEach(function (k, i) { index[k] = i; });
+
+    var users = opts.users || listUsers(rows);
+    var series = emptySeries(keys.length);
+    var perUser = {};
+    users.forEach(function (u) { perUser[u] = emptySeries(keys.length); });
+
+    rows.forEach(function (r) {
+      var i = index[bucketOf(r, grain)];
+      var targets = [series];
+      if (perUser[r.user_name]) targets.push(perUser[r.user_name]);
+      targets.forEach(function (t) {
+        if (r.channel === 'email') t.emailsSent[i]++;
+        else t.smsSent[i]++;
+        if (r.responded) t.responses[i]++;
+        t.total[i]++;
+      });
+    });
+
+    return { keys: keys, series: series, byUser: perUser };
+  }
+
+  /* ---------- labels ---------- */
+
+  function formatDateKey(key, withYear) {
+    if (!isDateKey(key)) return String(key || '');
+    var p = key.split('-');
+    return MONTHS[+p[1] - 1] + ' ' + (+p[2]) + (withYear ? ', ' + p[0] : '');
+  }
+
+  function bucketLabel(key, grain) {
+    if (grain === 'month') return MONTHS[+key.slice(5, 7) - 1] + ' ' + key.slice(0, 4);
+    if (grain === 'week') return 'Wk of ' + formatDateKey(key);
+    return formatDateKey(key);
+  }
+
+  function formatRange(start, end) {
+    if (!start || !end) return 'All time';
+    if (start === end) return formatDateKey(start, true);
+    var sameYear = start.slice(0, 4) === end.slice(0, 4);
+    return formatDateKey(start, !sameYear) + ' \u2013 ' + formatDateKey(end, true);
+  }
+
+  function formatInt(n) {
+    return Number(n || 0).toLocaleString('en-US');
+  }
+
+  function formatPct(r) {
+    return r === null || r === undefined ? '\u2014' : (r * 100).toFixed(1) + '%';
+  }
+
+  var api = {
+    TIME_ZONE: TIME_ZONE,
+    REPS: REPS,
+    toBool: toBool,
+    isDateKey: isDateKey,
+    addDays: addDays,
+    daysInclusive: daysInclusive,
+    mondayOf: mondayOf,
+    todayKey: todayKey,
+    expandRows: expandRows,
+    listUsers: listUsers,
+    filterRows: filterRows,
+    summarize: summarize,
+    byUser: byUser,
+    presetRange: presetRange,
+    previousRange: previousRange,
+    change: change,
+    bucketOf: bucketOf,
+    bucketRange: bucketRange,
+    trend: trend,
+    bucketLabel: bucketLabel,
+    formatDateKey: formatDateKey,
+    formatRange: formatRange,
+    formatInt: formatInt,
+    formatPct: formatPct
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  return api;
+})();
+</script>

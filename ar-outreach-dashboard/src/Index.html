@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <title>AR Payment Reminders - Outreach Dashboard (Subto)</title>
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <header class="page-header">
+    <div class="header-text">
+      <h1>AR Payment Reminders - Outreach Dashboard (Subto)</h1>
+      <p class="subtitle">
+        Outbound emails and SMS from the AR reps to leads that have ever been in the Close smart view
+        <strong>AR - Upcoming Payment Reminders | Within the next 7 Days</strong>.
+        <em>Responded</em> = the lead replied within 7 days of the message; responses are counted on the day the message was sent.
+        <em>Open rate</em> = emails opened &divide; emails sent.
+      </p>
+    </div>
+    <div class="header-meta">
+      <div class="updated">
+        <span class="muted">Last updated</span>
+        <span id="lastUpdated">&mdash;</span>
+        <span class="muted loaded-info" id="loadedInfo"></span>
+      </div>
+      <button type="button" id="refreshBtn" class="btn btn-primary" title="Re-read the sheet, bypassing the 10-minute cache">
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span class="btn-label">Refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <section class="filters card" id="filters" aria-label="Filters">
+    <div class="filter-group">
+      <span class="filter-label">Date range</span>
+      <div class="segmented" id="presetGroup" role="group" aria-label="Date range preset">
+        <button type="button" data-preset="last7">Last 7 days</button>
+        <button type="button" data-preset="last30">Last 30 days</button>
+        <button type="button" data-preset="last90">Last 90 days</button>
+        <button type="button" data-preset="thisMonth">This month</button>
+        <button type="button" data-preset="all">All time</button>
+      </div>
+      <div class="date-inputs">
+        <label>From <input type="date" id="startDate"></label>
+        <label>To <input type="date" id="endDate"></label>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Reps</span>
+      <div class="chips" id="userChips" role="group" aria-label="Reps"><span class="muted">Loading&hellip;</span></div>
+      <button type="button" class="link-btn" id="allUsersBtn">Select all</button>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Messages</span>
+      <div class="segmented" id="modeGroup" role="group" aria-label="Sequence or manual">
+        <button type="button" data-mode="all">All</button>
+        <button type="button" data-mode="sequence">Sequence</button>
+        <button type="button" data-mode="manual">Manual</button>
+      </div>
+    </div>
+
+    <p class="filter-summary" id="filterSummary" aria-live="polite"></p>
+  </section>
+
+  <div id="errorBanner" class="banner banner-error" role="alert" hidden>
+    <div>
+      <strong>Couldn't load the dashboard data.</strong>
+      <span id="errorMessage"></span>
+    </div>
+    <button type="button" class="btn" id="retryBtn">Try again</button>
+  </div>
+
+  <div id="emptyBanner" class="banner banner-info" hidden>
+    <span id="emptyMessage">No messages match these filters.</span>
+  </div>
+
+  <main id="content" class="is-loading" aria-busy="true">
+    <section class="kpis" id="kpiGrid" aria-label="Key metrics"></section>
+
+    <section class="card panel" aria-labelledby="userHeading">
+      <div class="panel-head">
+        <h2 id="userHeading">Per-rep comparison</h2>
+        <div class="segmented small" id="userChartMode" role="group" aria-label="Chart values">
+          <button type="button" data-value="counts">Counts</button>
+          <button type="button" data-value="rates">Rates</button>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="userChart" role="img" aria-label="Grouped bar chart comparing reps"></canvas>
+        <div class="chart-note" hidden></div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="userTable">
+          <thead>
+            <tr>
+              <th scope="col">Rep</th>
+              <th scope="col" class="num">Emails sent</th>
+              <th scope="col" class="num">Emails opened</th>
+              <th scope="col" class="num">Emails responded</th>
+              <th scope="col" class="num">SMS sent</th>
+              <th scope="col" class="num">SMS responded</th>
+              <th scope="col" class="num">Open rate</th>
+              <th scope="col" class="num">Response rate</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <section class="card panel" aria-labelledby="trendHeading">
+      <div class="panel-head">
+        <h2 id="trendHeading">Trend</h2>
+        <div class="panel-controls">
+          <div class="segmented small" id="grainGroup" role="group" aria-label="Bucket by">
+            <button type="button" data-value="day">Day</button>
+            <button type="button" data-value="week">Week</button>
+            <button type="button" data-value="month">Month</button>
+          </div>
+          <div class="segmented small" id="chartTypeGroup" role="group" aria-label="Chart type">
+            <button type="button" data-value="line">Line</button>
+            <button type="button" data-value="bar">Column</button>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="stackByUser"> Stack by rep
+          </label>
+          <select id="stackMetric" aria-label="Metric to stack" hidden>
+            <option value="total">All messages sent</option>
+            <option value="emailsSent">Emails sent</option>
+            <option value="smsSent">SMS sent</option>
+            <option value="responses">Responses</option>
+          </select>
+        </div>
+      </div>
+      <div class="chart-box chart-box-tall">
+        <canvas id="trendChart" role="img" aria-label="Trend chart of messages sent and responses"></canvas>
+        <div class="chart-note" hidden></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page-footer">
+    Data refreshes daily at 06:00 America/Phoenix from Close via n8n. This page loads only aggregate fields
+    (channel, rep, dates, sequence / opened / responded flags) and never lead names or contact details.
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+          integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
+          crossorigin="anonymous"></script>
+  <?!= include('Metrics'); ?>
+  <?!= include('App'); ?>
+</body>
+</html>
