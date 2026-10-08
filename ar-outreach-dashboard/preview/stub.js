@@ -2,7 +2,8 @@
  * Local-preview stand-in for google.script.run.getDashboardData().
  * Returns SYNTHETIC rows in the same shape the server sends; nothing here is real data.
  *
- * Query params:  ?state=error | empty | slow    ?delay=<ms>    ?days=120    ?seed=7
+ * Query params:  ?state=error | empty | slow | noseq    ?delay=<ms>    ?days=120    ?seed=7
+ *   noseq = the sheet has no sequence columns yet (old 8-field payload + missing_columns).
  */
 (function () {
   'use strict';
@@ -12,7 +13,33 @@
   var days = Math.max(1, Math.min(730, parseInt(params.get('days'), 10) || 120));
   var seed = parseInt(params.get('seed'), 10) || 7;
 
-  var FIELDS = ['channel', 'user_name', 'date', 'week_start', 'month', 'via_sequence', 'opened', 'responded'];
+  var BASE_FIELDS = ['channel', 'user_name', 'date', 'week_start', 'month', 'via_sequence', 'opened', 'responded'];
+  var SEQ_FIELDS = ['sequence_name', 'template_label', 'step_label', 'manual_label', 'lead_key'];
+  var FIELDS = BASE_FIELDS.concat(SEQ_FIELDS);
+
+  // [sequence_name, steps by channel: [step_label, template_label]]
+  var AR_REMINDERS = 'AR - Upcoming Payment Reminders';
+  var SEQUENCES = {
+    ar: [AR_REMINDERS, {
+      email: [['Step 1 - email', 'Payment reminder - 7 days out'], ['Step 3 - email', 'Payment reminder - day of']],
+      sms: [['Step 2 - sms', 'Payment reminder text - 3 days out'], ['Step 4 - sms', 'Payment reminder text - day of']]
+    }],
+    pastDue: ['AR - Past Due Follow-up', {
+      email: [['Step 1 - email', 'Past due notice'], ['Step 3 - email', 'Final past due notice']],
+      sms: [['Step 2 - sms', 'Past due text']]
+    }],
+    reinstate: ['Reinstatement Offer', {
+      email: [['Step 1 - email', 'Reinstatement offer'], ['', 'Reinstatement reminder']],
+      sms: [['Step 2 - sms', 'Reinstatement offer text']]
+    }]
+  };
+  var MANUAL_LABELS = [
+    'Template: Payment link resend', 'Template: Card update request', 'Template: Payment plan options',
+    'following up on your payment', 'checking in on your account', 'your payment did not go through',
+    'quick question about your membership', 'confirming your new payment date', ''
+  ];
+  var ONE_OFF_WORDS = ['thanks', 'call', 'update', 'invoice', 'receipt', 'card', 'schedule', 'question',
+    'reply', 'today', 'portal', 'login', 'refund', 'bank'];
   var REPS = [
     { name: 'Jasmine Bosley', email: 3.2, sms: 2.1, seq: 0.75, open: 0.52, reply: 0.16 },
     { name: 'Myles Thompson', email: 2.4, sms: 2.8, seq: 0.6, open: 0.44, reply: 0.12 },
@@ -28,6 +55,30 @@
     };
   }
   var rand = mulberry32(seed);
+  // Separate stream for the sequence columns so the Overview numbers match older screenshots.
+  var rand2 = mulberry32(seed + 1000);
+
+  function pick(list) { return list[Math.floor(rand2() * list.length)]; }
+
+  function hex6() { return ('00000' + Math.floor(rand2() * 0x1000000).toString(16)).slice(-6); }
+  var LEADS = [];
+  for (var l = 0; l < 180; l++) LEADS.push(hex6() + hex6());
+
+  /** Synthetic sequence columns; via_sequence is TRUE only for the AR reminder sequence. */
+  function sequenceCols(channel, viaSequence) {
+    var lead = pick(LEADS);
+    var seq = viaSequence ? SEQUENCES.ar
+      : (function (r) { return r < 0.22 ? SEQUENCES.pastDue : r < 0.36 ? SEQUENCES.reinstate : null; })(rand2());
+    if (seq) {
+      var step = pick(seq[1][channel]);
+      return [seq[0], step[1], step[0], '', lead];
+    }
+    var label = rand2() < 0.3
+      ? 're: ' + pick(ONE_OFF_WORDS) + ' ' + pick(ONE_OFF_WORDS) + ' ' + pick(ONE_OFF_WORDS)
+      : pick(MANUAL_LABELS);
+    var template = label.indexOf('Template: ') === 0 ? label.slice(10) : '';
+    return ['', template, '', label, lead];
+  }
 
   function poisson(mean) {
     var l = Math.exp(-mean), k = 0, p = 1;
@@ -61,7 +112,7 @@
           for (var i = 0; i < n; i++) {
             var isEmail = pair[0] === 'email';
             var replyChance = (isEmail ? rep.reply : rep.reply * 1.4) * (recent ? 0.6 : 1);
-            rows.push([
+            var base = [
               pair[0],
               rep.name,
               key(ms),
@@ -70,17 +121,19 @@
               rand() < rep.seq,
               isEmail && rand() < rep.open,
               rand() < replyChance
-            ]);
+            ];
+            rows.push(mode === 'noseq' ? base : base.concat(sequenceCols(pair[0], base[5])));
           }
         });
       });
     }
     var updated = new Date(today + 13 * 3600000);
     return {
-      fields: FIELDS.slice(),
+      fields: mode === 'noseq' ? BASE_FIELDS.slice() : FIELDS.slice(),
       rows: mode === 'empty' ? [] : rows,
       row_count: mode === 'empty' ? 0 : rows.length,
       skipped_rows: 0,
+      missing_columns: mode === 'noseq' ? SEQ_FIELDS.slice() : [],
       last_updated: mode === 'empty' ? null : updated.toISOString(),
       generated_at: new Date().toISOString(),
       from_cache: false

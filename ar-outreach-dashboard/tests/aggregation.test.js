@@ -59,30 +59,51 @@ const deepEqual = (actual, expected, msg) => assert.deepStrictEqual(plain(actual
 
 /* ---------- fixtures ---------- */
 
-const HEADER = ['activity_id', 'channel', 'user_name', 'user_id', 'lead_id', 'lead_name', 'sent_at',
+// Columns A-Q, then the sequence columns R-X appended after last_checked.
+const V1_HEADER = ['activity_id', 'channel', 'user_name', 'user_id', 'lead_id', 'lead_name', 'sent_at',
   'date', 'week_start', 'month', 'template_name', 'via_sequence', 'opened', 'first_opened_at',
   'responded', 'responded_at', 'last_checked'];
+const SEQ_COLUMNS = ['sequence_id', 'sequence_name', 'template_id', 'template_label', 'step_label',
+  'manual_label', 'lead_key'];
+const HEADER = V1_HEADER.concat(SEQ_COLUMNS);
 
+const FIELDS = ['channel', 'user_name', 'date', 'week_start', 'month', 'via_sequence', 'opened', 'responded',
+  'sequence_name', 'template_label', 'step_label', 'manual_label', 'lead_key'];
+const SEQ_FIELDS = ['sequence_name', 'template_label', 'step_label', 'manual_label', 'lead_key'];
+const AR = 'AR - Upcoming Payment Reminders';
+
+function rowFor(header, o) {
+  return header.map((h) => (h in o ? o[h] : ''));
+}
 function sheetRow(o) {
-  return HEADER.map((h) => (h in o ? o[h] : ''));
+  return rowFor(HEADER, o);
 }
 
-const SECRET_STRINGS = ['acti_SECRET1', 'lead_SECRET1', 'Synthetic Lead Alpha', 'Template with +1 555 0100'];
+const RAW_TEXT = 'Hi Synthetic Lead Alpha, your $450.00 payment is due 10/12. Call +1 (555) 010-0199 or synthetic.alpha@example.com';
+const SECRET_STRINGS = ['acti_SECRET1', 'lead_SECRET1', 'Synthetic Lead Alpha', 'Synthetic', 'Alpha',
+  'Template with +1 555 0100', 'seq_SECRET1', 'tmpl_SECRET1', 'synthetic.alpha@example.com', '555', '0199',
+  '450', RAW_TEXT];
 
 const sheetValues = [
   HEADER,
   sheetRow({ activity_id: 'acti_SECRET1', channel: 'email', user_name: 'Jasmine Bosley', lead_id: 'lead_SECRET1',
     lead_name: 'Synthetic Lead Alpha', template_name: 'Template with +1 555 0100', sent_at: '2026-10-05T16:00:00.000Z',
     date: '2026-10-05', week_start: '2026-10-05', month: '2026-10', via_sequence: true, opened: true,
-    responded: false, last_checked: '2026-10-06T13:00:00.000Z' }),
+    responded: false, last_checked: '2026-10-06T13:00:00.000Z', sequence_id: 'seq_SECRET1', sequence_name: AR,
+    template_id: 'tmpl_SECRET1', template_label: 'Payment reminder - 7 days out', step_label: 'Step 1 - email',
+    lead_key: 'A1B2C3D4E5F6' }),
   sheetRow({ channel: 'EMAIL', user_name: 'Myles Thompson', date: '2026-10-06', week_start: '2026-10-05',
     month: '2026-10', via_sequence: 'FALSE', opened: 'TRUE', responded: 'true',
-    last_checked: new Date('2026-10-07T13:00:00.000Z') }),
+    last_checked: new Date('2026-10-07T13:00:00.000Z'), template_label: 'Payment link resend',
+    manual_label: 'Template: Payment link resend', lead_key: '0123456789ab' }),
   sheetRow({ channel: 'sms', user_name: 'Crystal Belmontes', date: new Date('2026-10-04T19:00:00.000Z'),
     week_start: '', month: new Date('2026-10-01T07:00:00.000Z'), via_sequence: 'TRUE', opened: 'TRUE',
-    responded: 'FALSE', last_checked: '2026-10-05T13:00:00.000Z' }),
+    responded: 'FALSE', last_checked: '2026-10-05T13:00:00.000Z', sequence_name: `  ${AR} `,
+    step_label: 'Step 2 - sms', lead_key: 'a1b2c3d4e5f6' }),
+  // Un-normalized free text (n8n should never write this) is still scrubbed on the server.
   sheetRow({ channel: 'sms', user_name: 'Jasmine Bosley', sent_at: '2026-09-30T23:30:00.000Z', date: '',
-    via_sequence: 'false', opened: '', responded: 'TRUE' }),
+    via_sequence: 'false', opened: '', responded: 'TRUE', lead_name: 'Synthetic Lead Alpha',
+    manual_label: RAW_TEXT, lead_key: 'synthetic.alpha@example.com' }),
   sheetRow({}),
   sheetRow({ channel: 'call', user_name: 'Myles Thompson', date: '2026-10-06' })
 ];
@@ -106,29 +127,82 @@ const payload = plain(server.buildPayload_(sheetValues, {
   sheetTimeZone: 'America/Phoenix'
 }));
 
-test('payload sends exactly the eight allowed fields per row', () => {
-  deepEqual(payload.fields,
-    ['channel', 'user_name', 'date', 'week_start', 'month', 'via_sequence', 'opened', 'responded']);
-  payload.rows.forEach((r) => assert.strictEqual(r.length, 8));
+test('payload sends exactly the thirteen allowed fields per row', () => {
+  deepEqual(payload.fields, FIELDS);
+  payload.rows.forEach((r) => assert.strictEqual(r.length, FIELDS.length));
   deepEqual(Object.keys(payload).sort(),
-    ['fields', 'generated_at', 'last_updated', 'row_count', 'rows', 'skipped_rows']);
+    ['fields', 'generated_at', 'last_updated', 'missing_columns', 'row_count', 'rows', 'skipped_rows']);
+  deepEqual(payload.missing_columns, []);
 });
 
-test('payload never contains lead names, ids or template text', () => {
+test('payload never contains lead names, emails, phones, ids or raw text', () => {
   const json = JSON.stringify(payload);
   SECRET_STRINGS.forEach((s) => assert.ok(!json.includes(s), 'leaked: ' + s));
-  ['lead_name', 'lead_id', 'activity_id', 'template_name', 'user_id'].forEach((f) => assert.ok(!json.includes(f), 'leaked field: ' + f));
+  ['lead_name', 'lead_id', 'activity_id', 'template_name', 'user_id', 'sequence_id', 'template_id']
+    .forEach((f) => assert.ok(!json.includes(f), 'leaked field: ' + f));
+  assert.ok(!/@/.test(json), 'no email-like text');
+  payload.rows.forEach((r) => {
+    const values = r.slice(FIELDS.indexOf('sequence_name'));
+    values.forEach((v) => assert.ok(String(v).length <= 100, 'label over 100 chars: ' + v));
+  });
 });
 
 test('payload rows are normalized (booleans, Date cells, derived week/month, sent_at fallback)', () => {
   assert.strictEqual(payload.row_count, 4);
   assert.strictEqual(payload.skipped_rows, 1, 'unknown channel skipped, blank row ignored');
-  deepEqual(payload.rows[0], ['email', 'Jasmine Bosley', '2026-10-05', '2026-10-05', '2026-10', true, true, false]);
-  deepEqual(payload.rows[1], ['email', 'Myles Thompson', '2026-10-06', '2026-10-05', '2026-10', false, true, true]);
+  deepEqual(payload.rows[0], ['email', 'Jasmine Bosley', '2026-10-05', '2026-10-05', '2026-10', true, true, false,
+    AR, 'Payment reminder - 7 days out', 'Step 1 - email', '', 'a1b2c3d4e5f6']);
+  deepEqual(payload.rows[1], ['email', 'Myles Thompson', '2026-10-06', '2026-10-05', '2026-10', false, true, true,
+    '', 'Payment link resend', '', 'Template: Payment link resend', '0123456789ab']);
   // Date cell -> sheet-zone date; blank week_start -> Monday; Date month cell -> from date; SMS opened forced false.
-  deepEqual(payload.rows[2], ['sms', 'Crystal Belmontes', '2026-10-04', '2026-09-28', '2026-10', true, false, false]);
+  deepEqual(payload.rows[2], ['sms', 'Crystal Belmontes', '2026-10-04', '2026-09-28', '2026-10', true, false, false,
+    AR, '', 'Step 2 - sms', '', 'a1b2c3d4e5f6']);
   // No date: falls back to sent_at in America/Phoenix (23:30Z on Sep 30 = 16:30 MST Sep 30).
-  deepEqual(payload.rows[3], ['sms', 'Jasmine Bosley', '2026-09-30', '2026-09-28', '2026-09', false, false, true]);
+  // Raw free text loses the lead name, $ amount, digits, phone and email; a non-hash lead_key is dropped.
+  deepEqual(payload.rows[3], ['sms', 'Jasmine Bosley', '2026-09-30', '2026-09-28', '2026-09', false, false, true,
+    '', '', '', 'Hi, your payment is due Call or', '']);
+});
+
+test('only whitelisted columns are sent, even if the sheet grows extra text columns', () => {
+  const header = HEADER.concat(['email_body', 'phone', 'subject']);
+  const p = plain(server.buildPayload_([header, rowFor(header, {
+    channel: 'email', user_name: 'Myles Thompson', date: '2026-10-06', lead_name: 'Synthetic Lead Beta',
+    email_body: 'Dear Synthetic Lead Beta, raw body text', phone: '+15550100123', subject: 'Raw subject line',
+    sequence_name: AR, lead_key: 'ffffffffffff'
+  })], { now: new Date(0) }));
+  deepEqual(p.fields, FIELDS);
+  const json = JSON.stringify(p);
+  ['Synthetic Lead Beta', 'raw body text', '15550100123', 'Raw subject line', 'email_body', 'subject']
+    .forEach((s) => assert.ok(!json.includes(s), 'leaked: ' + s));
+});
+
+test('label cleaning: templates keep their digits, free text is capped at 100 chars', () => {
+  assert.strictEqual(server.cleanManualLabel_('Template: Day 3 reminder', 'X Y'), 'Template: Day 3 reminder');
+  assert.strictEqual(server.cleanManualLabel_('Template: Reach me at a.b@example.com', ''), 'Template: Reach me at');
+  const long = server.cleanManualLabel_('word '.repeat(60), '');
+  assert.ok(long.length <= 100 && long.length > 90);
+  assert.strictEqual(server.cleanManualLabel_('thanks Jo-Anne O\'Neil for the update', "Jo-Anne O'Neil"),
+    'thanks for the update');
+  assert.strictEqual(server.cleanLabel_(null), '');
+  assert.strictEqual(server.cleanLeadKey_('ABCDEF012345'), 'abcdef012345');
+  ['lead_abc', 'abcdef01234', 'abcdef0123456', 'ghijklmnopqr', ''].forEach((v) =>
+    assert.strictEqual(server.cleanLeadKey_(v), '', v));
+});
+
+test('missing sequence columns: rows still build, new fields are blank, missing_columns lists them', () => {
+  const v1 = plain(server.buildPayload_([V1_HEADER,
+    rowFor(V1_HEADER, { channel: 'email', user_name: 'Myles Thompson', date: '2026-10-06', via_sequence: true })],
+  { now: new Date(0) }));
+  deepEqual(v1.fields, FIELDS);
+  deepEqual(v1.rows, [['email', 'Myles Thompson', '2026-10-06', '2026-10-05', '2026-10', true, false, false,
+    '', '', '', '', '']]);
+  deepEqual(v1.missing_columns, SEQ_FIELDS);
+
+  const partial = plain(server.buildPayload_([V1_HEADER.concat(['sequence_name']),
+    rowFor(V1_HEADER.concat(['sequence_name']), { channel: 'sms', user_name: 'X', date: '2026-10-06', sequence_name: AR })],
+  { now: new Date(0) }));
+  deepEqual(partial.missing_columns, ['template_label', 'step_label', 'manual_label', 'lead_key']);
+  assert.strictEqual(partial.rows[0][8], AR);
 });
 
 test('last_updated is the max of last_checked across string and Date cells', () => {
@@ -197,7 +271,8 @@ const apiValues = [
   HEADER,
   ['acti_SECRET2', 'email', 'Jasmine Bosley', 'user_1', 'lead_SECRET2', 'Synthetic Lead Beta',
     '2026-10-06T16:00:00.000Z', '2026-10-06', '2026-10-05', '2026-10', 'Template with +1 555 0100',
-    true, true, '2026-10-06T17:00:00.000Z', true, '2026-10-06T18:00:00.000Z', '2026-10-07T13:00:00.000Z'],
+    true, true, '2026-10-06T17:00:00.000Z', true, '2026-10-06T18:00:00.000Z', '2026-10-07T13:00:00.000Z',
+    'seq_SECRET2', AR, 'tmpl_SECRET2', 'Payment reminder - 7 days out', 'Step 1 - email', '', 'abcdefabcdef'],
   ['', 'sms', 'Myles Thompson', '', '', '', '', '2026-10-07', '', '', '', false],
   [],
   ['', 'email', 'Crystal Belmontes', '', '', '', '', '2026-10-01', '2026-09-28', '2026-10', '', true, false,
@@ -224,17 +299,18 @@ test('getDashboardData reads the gid tab via Sheets with unformatted values and 
   assert.strictEqual(p.row_count, 3);
   assert.strictEqual(p.skipped_rows, 1, 'row with a channel but no date is skipped; [] row ignored');
   deepEqual(p.rows, [
-    ['email', 'Jasmine Bosley', '2026-10-06', '2026-10-05', '2026-10', true, true, true],
-    // Ragged row: missing opened / responded / last_checked read as blank; week and month derived.
-    ['sms', 'Myles Thompson', '2026-10-07', '2026-10-05', '2026-10', false, false, false],
-    ['email', 'Crystal Belmontes', '2026-10-01', '2026-09-28', '2026-10', true, false, false]
+    ['email', 'Jasmine Bosley', '2026-10-06', '2026-10-05', '2026-10', true, true, true,
+      AR, 'Payment reminder - 7 days out', 'Step 1 - email', '', 'abcdefabcdef'],
+    // Ragged row: missing opened / responded / last_checked / sequence columns read as blank; week and month derived.
+    ['sms', 'Myles Thompson', '2026-10-07', '2026-10-05', '2026-10', false, false, false, '', '', '', '', ''],
+    ['email', 'Crystal Belmontes', '2026-10-01', '2026-09-28', '2026-10', true, false, false, '', '', '', '', '']
   ]);
   assert.strictEqual(p.last_updated, '2026-10-07T13:00:00.000Z');
   deepEqual(Object.keys(p).sort(),
-    ['fields', 'from_cache', 'generated_at', 'last_updated', 'row_count', 'rows', 'skipped_rows']);
+    ['fields', 'from_cache', 'generated_at', 'last_updated', 'missing_columns', 'row_count', 'rows', 'skipped_rows']);
   const json = JSON.stringify(p);
-  ['acti_SECRET2', 'lead_SECRET2', 'Synthetic Lead Beta', 'Template with +1 555 0100', 'user_1']
-    .forEach((s) => assert.ok(!json.includes(s), 'leaked: ' + s));
+  ['acti_SECRET2', 'lead_SECRET2', 'Synthetic Lead Beta', 'Template with +1 555 0100', 'user_1',
+    'seq_SECRET2', 'tmpl_SECRET2'].forEach((s) => assert.ok(!json.includes(s), 'leaked: ' + s));
 });
 
 test('getDashboardData serves the cache until forceRefresh', () => {
@@ -278,7 +354,9 @@ test('expandRows turns array rows into objects and keeps them all', () => {
   assert.strictEqual(rows.length, 4);
   deepEqual(plain(rows[1]), {
     channel: 'email', user_name: 'Myles Thompson', date: '2026-10-06', week_start: '2026-10-05',
-    month: '2026-10', via_sequence: false, opened: true, responded: true
+    month: '2026-10', via_sequence: false, opened: true, responded: true,
+    sequence_name: '', template_label: 'Payment link resend', step_label: '',
+    manual_label: 'Template: Payment link resend', lead_key: '0123456789ab'
   });
   const fromObjects = M.expandRows({ fields: payload.fields, rows: [
     { channel: 'SMS', user_name: 'Myles Thompson', date: '2026-10-07', via_sequence: 'TRUE', opened: 'TRUE', responded: 'true' },
@@ -287,7 +365,8 @@ test('expandRows turns array rows into objects and keeps them all', () => {
   assert.strictEqual(fromObjects.length, 1);
   deepEqual(plain(fromObjects[0]), {
     channel: 'sms', user_name: 'Myles Thompson', date: '2026-10-07', week_start: '2026-10-05',
-    month: '2026-10', via_sequence: true, opened: false, responded: true
+    month: '2026-10', via_sequence: true, opened: false, responded: true,
+    sequence_name: '', template_label: '', step_label: '', manual_label: '', lead_key: ''
   });
 });
 
@@ -424,6 +503,189 @@ test('change: percent for counts, points for rates, sensible edge cases', () => 
   deepEqual(plain(M.change(0.5, 0.4, 'rate')), { dir: 'up', label: '+10.0 pts' });
   deepEqual(plain(M.change(0.3, 0.45, 'rate')), { dir: 'down', label: '\u221215.0 pts' });
   deepEqual(plain(M.change(null, 0.4, 'rate')), { dir: 'na', label: 'n/a' });
+});
+
+/* ---------- client: sequences ---------- */
+
+const PD = 'AR - Past Due Follow-up';
+const RE = 'Reinstatement Offer';
+const FOLLOW = 'following up on your payment';
+const QUICK = 'quick question about your account';
+const K = (n) => n.toString(16).padStart(12, '0');
+const sr = (o) => Object.assign({ channel: 'email', user_name: 'Jasmine Bosley', date: '2026-10-05', via_sequence: false,
+  opened: false, responded: false, sequence_name: '', template_label: '', step_label: '', manual_label: '', lead_key: '' }, o);
+
+const seqRows = M.expandRows({ fields: FIELDS, rows: [
+  sr({ via_sequence: true, sequence_name: AR, step_label: 'Step 1 - email', opened: true, lead_key: K(1) }),
+  sr({ channel: 'sms', via_sequence: true, sequence_name: AR, step_label: 'Step 2 - sms', responded: true, lead_key: K(1) }),
+  sr({ user_name: 'Myles Thompson', date: '2026-10-06', via_sequence: true, sequence_name: AR, step_label: 'Step 1 - email',
+    opened: true, responded: true, lead_key: K(2) }),
+  sr({ user_name: 'Crystal Belmontes', date: '2026-10-12', via_sequence: true, sequence_name: AR,
+    template_label: 'Payment reminder - day of', lead_key: K(3) }),
+  sr({ user_name: 'Myles Thompson', date: '2026-10-06', sequence_name: PD, step_label: 'Step 1 - email', lead_key: K(4) }),
+  sr({ channel: 'sms', user_name: 'Myles Thompson', date: '2026-10-13', sequence_name: PD, step_label: 'Step 2 - sms',
+    responded: true, lead_key: K(4) }),
+  sr({ user_name: 'Crystal Belmontes', date: '2026-10-07', sequence_name: RE, opened: true, lead_key: K(5) }),
+  // Manual (no sequence) rows
+  sr({ manual_label: 'Template: Card update request', template_label: 'Card update request', lead_key: K(6) }),
+  sr({ manual_label: FOLLOW, lead_key: K(6), opened: true }),
+  sr({ channel: 'sms', user_name: 'Myles Thompson', manual_label: FOLLOW, lead_key: K(7), responded: true }),
+  sr({ manual_label: FOLLOW, lead_key: K(8), date: '2026-10-13' }),
+  sr({ user_name: 'Crystal Belmontes', manual_label: FOLLOW, lead_key: K(8) }),
+  sr({ manual_label: QUICK, lead_key: K(6) }),
+  sr({ manual_label: QUICK, lead_key: K(6), responded: true }),
+  sr({ channel: 'sms', manual_label: QUICK, lead_key: K(7) }),
+  sr({ manual_label: QUICK, lead_key: '' }),
+  sr({ manual_label: 'thanks see you on the call', lead_key: K(9), opened: true }),
+  sr({ manual_label: '', lead_key: K(10) }),
+  sr({ channel: 'sms', user_name: 'Myles Thompson', manual_label: '', lead_key: K(11) })
+] });
+const names = (groups) => groups.map((g) => g.name);
+
+test('bySequence: one row per sequence_name, most sends first, Manual (no sequence) last', () => {
+  assert.strictEqual(seqRows.length, 19);
+  const groups = M.bySequence(seqRows);
+  deepEqual(names(groups), [AR, PD, RE, M.MANUAL_SEQUENCE]);
+  const ar = groups[0];
+  deepEqual([ar.emailsSent, ar.emailsOpened, ar.emailsResponded, ar.smsSent, ar.smsResponded, ar.distinctLeads],
+    [3, 2, 1, 1, 1, 3]);
+  assert.strictEqual(ar.openRate, 2 / 3);
+  assert.strictEqual(ar.responseRate, 0.5);
+  assert.strictEqual(ar.isManual, false);
+  const manual = groups[3];
+  assert.strictEqual(manual.isManual, true);
+  assert.strictEqual(manual.totalSent, 12);
+  assert.strictEqual(manual.distinctLeads, 6);
+});
+
+test('sortSequences: any column, both directions, empty rates last, Manual pinned last', () => {
+  const groups = M.bySequence(seqRows);
+  deepEqual(names(M.sortSequences(groups, 'name', 'asc')), [PD, AR, RE, M.MANUAL_SEQUENCE]);
+  deepEqual(names(M.sortSequences(groups, 'name', 'desc')), [RE, AR, PD, M.MANUAL_SEQUENCE]);
+  deepEqual(names(M.sortSequences(groups, 'openRate', 'desc')), [RE, AR, PD, M.MANUAL_SEQUENCE]);
+  deepEqual(names(M.sortSequences(groups, 'openRate', 'asc')), [PD, AR, RE, M.MANUAL_SEQUENCE]);
+  // PD and RE both have 1 lead; the tie goes to more sends (PD).
+  deepEqual(names(M.sortSequences(groups, 'distinctLeads', 'asc')), [PD, RE, AR, M.MANUAL_SEQUENCE]);
+  const withNull = [{ name: 'x', openRate: null, totalSent: 1 }, { name: 'y', openRate: 0.1, totalSent: 1 }];
+  deepEqual(names(M.sortSequences(withNull, 'openRate', 'asc')), ['y', 'x']);
+  deepEqual(names(M.sortSequences(withNull, 'openRate', 'desc')), ['y', 'x']);
+});
+
+test('sequenceDetail: per-rep split and per-step breakdown (step_label, then template_label)', () => {
+  const d = M.sequenceDetail(M.rowsForSequence(seqRows, AR), M.REPS);
+  deepEqual(d.reps.map((s) => [s.user, s.totalSent, s.totalResponded, s.distinctLeads]),
+    [['Jasmine Bosley', 2, 1, 1], ['Myles Thompson', 1, 1, 1], ['Crystal Belmontes', 1, 0, 1]]);
+  deepEqual(d.steps.map((s) => [s.name, s.totalSent, s.emailsOpened, s.totalResponded, s.distinctLeads]), [
+    ['Step 1 - email', 2, 2, 1, 2],
+    ['Step 2 - sms', 1, 0, 1, 1],
+    ['Payment reminder - day of', 1, 0, 0, 1]
+  ]);
+  deepEqual(names(M.byStep(M.rowsForSequence(seqRows, RE))), [M.NO_STEP]);
+  const mixed = M.expandRows({ fields: FIELDS, rows: [
+    sr({ step_label: 'Step 10 - email' }), sr({ step_label: 'Step 2 - sms', channel: 'sms' }),
+    sr({ template_label: 'Zeta' }), sr({ template_label: 'Alpha' }), sr({ template_label: 'Alpha' }), sr({})
+  ] });
+  deepEqual(names(M.byStep(mixed)), ['Step 2 - sms', 'Step 10 - email', 'Alpha', 'Zeta', M.NO_STEP]);
+});
+
+test('distinctLeads counts unique non-empty lead_keys (case-insensitive)', () => {
+  assert.strictEqual(M.distinctLeads(seqRows), 11);
+  assert.strictEqual(M.distinctLeads([]), 0);
+  const mixedCase = M.expandRows({ fields: FIELDS, rows: [
+    sr({ lead_key: 'ABCDEF000001' }), sr({ lead_key: 'abcdef000001' }), sr({ lead_key: '' })
+  ] });
+  assert.strictEqual(M.distinctLeads(mixedCase), 1);
+});
+
+test('date, rep and Sequence/Manual filters apply to the sequence views', () => {
+  const by = (f) => M.bySequence(M.filterRows(seqRows, f)).map((g) => [g.name, g.totalSent]);
+  deepEqual(by({ users: ['Myles Thompson'] }), [[PD, 2], [AR, 1], [M.MANUAL_SEQUENCE, 2]]);
+  deepEqual(by({ mode: 'sequence' }), [[AR, 4]]);
+  deepEqual(by({ mode: 'manual' }), [[PD, 2], [RE, 1], [M.MANUAL_SEQUENCE, 12]]);
+  deepEqual(by({ end: '2026-10-06' }), [[AR, 3], [PD, 1], [M.MANUAL_SEQUENCE, 11]]);
+  deepEqual(by({ users: [] }), []);
+
+  // The 3-lead threshold is measured inside the filtered window.
+  const late = M.topManualMessages(M.filterRows(seqRows, { start: '2026-10-07' }));
+  deepEqual(late.top, []);
+  assert.strictEqual(late.other.totalSent, 1);
+  assert.strictEqual(M.topManualMessages(M.filterRows(seqRows, { mode: 'sequence' })).manualSent, 0);
+});
+
+test('sequenceTrend: one series per sequence; topSequenceNames skips Manual', () => {
+  const groups = M.bySequence(seqRows);
+  deepEqual(M.topSequenceNames(groups, 2), [AR, PD]);
+  deepEqual(M.topSequenceNames(groups, 5), [AR, PD, RE]);
+  const t = M.sequenceTrend(seqRows, 'week', { names: [AR, PD] });
+  deepEqual(t.keys, ['2026-10-05', '2026-10-12']);
+  deepEqual(Object.keys(t.bySequence), [AR, PD]);
+  deepEqual(t.bySequence[AR].total, [3, 1]);
+  deepEqual(t.bySequence[AR].smsSent, [1, 0]);
+  deepEqual(t.bySequence[PD].total, [1, 1]);
+  deepEqual(t.bySequence[PD].responses, [0, 1]);
+  const range = { start: '2026-10-05', end: '2026-10-07' };
+  const day = M.sequenceTrend(M.filterRows(seqRows, range), 'day', Object.assign({ names: [RE] }, range));
+  deepEqual(day.bySequence[RE].total, [0, 0, 1]);
+  deepEqual(Object.keys(M.sequenceTrend(seqRows, 'month', {}).bySequence), [AR, PD, RE, M.MANUAL_SEQUENCE]);
+});
+
+test('topManualMessages: templates always rank, free text needs 3 distinct leads, rest rolls up', () => {
+  const m = M.topManualMessages(seqRows);
+  deepEqual(m.top.map((s) => [s.name, s.totalSent, s.emailsOpened, s.totalResponded, s.distinctLeads]), [
+    [FOLLOW, 4, 1, 1, 3],
+    ['Template: Card update request', 1, 0, 0, 1]
+  ]);
+  assert.strictEqual(m.top[0].responseRate, 0.25);
+  assert.strictEqual(m.rankedCount, 2);
+  // QUICK has 4 sends but only 2 distinct leads (the blank key doesn't count) -> rolled up with the one-off.
+  assert.strictEqual(m.other.name, M.OTHER_MANUAL);
+  deepEqual([m.other.totalSent, m.other.groupCount, m.other.totalResponded], [5, 2, 1]);
+  assert.strictEqual(m.unlabeled.name, M.UNLABELED);
+  assert.strictEqual(m.unlabeled.totalSent, 2);
+  assert.strictEqual(m.manualSent, 12);
+  assert.ok(!m.top.some((s) => s.name === QUICK));
+});
+
+test('topManualMessages ranks by sends, ties alphabetically, and keeps only the top 10', () => {
+  const list = [];
+  for (let i = 1; i <= 12; i++) {
+    for (let j = 0; j < i; j++) list.push(sr({ manual_label: 'Template: T' + String(i).padStart(2, '0'), lead_key: K(1) }));
+  }
+  list.push(sr({ manual_label: 'Template: Tie B', lead_key: K(1) }), sr({ manual_label: 'Template: Tie A', lead_key: K(1) }));
+  for (let j = 0; j < 20; j++) list.push(sr({ manual_label: 'popular but only two leads', lead_key: K(j % 2) }));
+  const m = M.topManualMessages(M.expandRows({ fields: FIELDS, rows: list }));
+  assert.strictEqual(m.top.length, 10);
+  assert.strictEqual(m.rankedCount, 14);
+  deepEqual(names(m.top), ['T12', 'T11', 'T10', 'T09', 'T08', 'T07', 'T06', 'T05', 'T04', 'T03'].map((t) => 'Template: ' + t));
+  assert.strictEqual(m.other.totalSent, 20);
+  assert.strictEqual(m.unlabeled, null);
+  const ties = M.topManualMessages(M.expandRows({ fields: FIELDS, rows: list }), { limit: 20 });
+  deepEqual(names(ties.top).slice(-3), ['Template: T01', 'Template: Tie A', 'Template: Tie B']);
+});
+
+test('sequenceDataStatus: missing or unfilled columns degrade; Overview numbers are unaffected', () => {
+  assert.strictEqual(M.sequenceDataStatus(payload, M.expandRows(payload)).available, true);
+
+  const v1 = plain(server.buildPayload_([V1_HEADER,
+    rowFor(V1_HEADER, { channel: 'email', user_name: 'Myles Thompson', date: '2026-10-06', opened: true })],
+  { now: new Date(0) }));
+  const v1Rows = M.expandRows(v1);
+  deepEqual(plain(M.sequenceDataStatus(v1, v1Rows)), { available: false, reason: 'missing_columns', missing: SEQ_FIELDS });
+  assert.strictEqual(M.summarize(v1Rows).emailsOpened, 1);
+
+  // A pre-upgrade cached payload: eight fields, no missing_columns key.
+  const oldPayload = { fields: FIELDS.slice(0, 8), rows: [['sms', 'Myles Thompson', '2026-10-06', '', '', true, false, true]] };
+  const oldRows = M.expandRows(oldPayload);
+  deepEqual(plain(M.sequenceDataStatus(oldPayload, oldRows)).missing, SEQ_FIELDS);
+  deepEqual([oldRows[0].sequence_name, oldRows[0].manual_label, oldRows[0].lead_key], ['', '', '']);
+  assert.strictEqual(M.summarize(oldRows).smsResponded, 1);
+  deepEqual(names(M.bySequence(oldRows)), [M.MANUAL_SEQUENCE]);
+  assert.strictEqual(M.topManualMessages(oldRows).unlabeled.totalSent, 1);
+
+  const unfilled = { fields: FIELDS, missing_columns: [], rows: [sr({})] };
+  assert.strictEqual(M.sequenceDataStatus(unfilled, M.expandRows(unfilled)).reason, 'not_filled');
+  const emptySheet = { fields: FIELDS, missing_columns: [], rows: [] };
+  assert.strictEqual(M.sequenceDataStatus(emptySheet, []).available, true);
 });
 
 /* ---------- report ---------- */

@@ -3,7 +3,8 @@
  *
  * Serves the web app and a privacy-filtered, cached copy of the `messages` tab.
  * Only the fields in PAYLOAD_FIELDS ever leave the server; lead-level columns
- * (lead_name, lead_id, activity_id, template_name, ...) are read but dropped here.
+ * (lead_name, lead_id, activity_id, template_name, sequence_id, template_id, ...) are
+ * read but dropped here. lead_key is a non-reversible 12-hex hash written by n8n.
  */
 
 var CONFIG = {
@@ -12,7 +13,8 @@ var CONFIG = {
   SHEET_NAME_FALLBACK: 'messages',
   TIME_ZONE: 'America/Phoenix',
   TITLE: 'AR Payment Reminders - Outreach Dashboard (Subto)',
-  CACHE_KEY: 'ar_outreach_payload_v1',
+  // Bump when PAYLOAD_FIELDS changes so an old cached payload is never served.
+  CACHE_KEY: 'ar_outreach_payload_v2',
   CACHE_SECONDS: 600,
   // CacheService caps each value at 100 KB; stay well under it.
   CACHE_CHUNK_CHARS: 50000
@@ -26,8 +28,18 @@ var PAYLOAD_FIELDS = [
   'month',
   'via_sequence',
   'opened',
-  'responded'
+  'responded',
+  'sequence_name',
+  'template_label',
+  'step_label',
+  'manual_label',
+  'lead_key'
 ];
+
+// Added to the sheet after `last_checked`. Until they exist they are sent as '' and
+// listed in the payload's `missing_columns`, and the Sequences tab says so.
+var SEQUENCE_COLUMNS = ['sequence_name', 'template_label', 'step_label', 'manual_label', 'lead_key'];
+var LABEL_MAX_CHARS = 100;
 
 function doGet() {
   return HtmlService.createTemplateFromFile('Index')
@@ -119,9 +131,11 @@ function buildPayload_(values, opts) {
   });
   var col = {};
   ['channel', 'user_name', 'sent_at', 'date', 'week_start', 'month',
-    'via_sequence', 'opened', 'responded', 'last_checked'].forEach(function (name) {
-    col[name] = header.indexOf(name);
-  });
+    'via_sequence', 'opened', 'responded', 'last_checked', 'lead_name'].concat(SEQUENCE_COLUMNS)
+    .forEach(function (name) {
+      col[name] = header.indexOf(name);
+    });
+  var missingColumns = SEQUENCE_COLUMNS.filter(function (name) { return col[name] < 0; });
 
   var missing = ['channel', 'user_name'].filter(function (name) { return col[name] < 0; });
   if (col.date < 0 && col.sent_at < 0) missing.push('date');
@@ -157,7 +171,12 @@ function buildPayload_(values, opts) {
       month,
       toBool_(cell_(row, col.via_sequence)),
       channel === 'email' ? toBool_(cell_(row, col.opened)) : false,
-      toBool_(cell_(row, col.responded))
+      toBool_(cell_(row, col.responded)),
+      cleanLabel_(cell_(row, col.sequence_name)),
+      cleanLabel_(cell_(row, col.template_label)),
+      cleanLabel_(cell_(row, col.step_label)),
+      cleanManualLabel_(cell_(row, col.manual_label), cell_(row, col.lead_name)),
+      cleanLeadKey_(cell_(row, col.lead_key))
     ]);
 
     var checked = toMillis_(cell_(row, col.last_checked));
@@ -169,6 +188,7 @@ function buildPayload_(values, opts) {
     rows: rows,
     row_count: rows.length,
     skipped_rows: skipped,
+    missing_columns: missingColumns,
     last_updated: lastChecked === null ? null : new Date(lastChecked).toISOString(),
     generated_at: now.toISOString()
   };
@@ -227,6 +247,61 @@ function mondayOf_(dateKey) {
   var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
   d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
   return d.toISOString().slice(0, 10);
+}
+
+/*
+ * Label hygiene. n8n already normalizes these columns; this is a second guard so a
+ * misconfigured column can't push contact details or lead names to the browser.
+ */
+
+function scrubContacts_(s) {
+  return s
+    .replace(/[^\s@<>()]+@[^\s@<>()]+\.[a-z]{2,}/gi, ' ')
+    .replace(/\+?\d[\d\s().-]{5,}\d/g, ' ');
+}
+
+function capLabel_(s) {
+  s = s.replace(/\s+/g, ' ').trim();
+  return s.length > LABEL_MAX_CHARS ? s.slice(0, LABEL_MAX_CHARS).trim() : s;
+}
+
+/** Sequence, template and step names: org-authored, so only contacts are scrubbed. */
+function cleanLabel_(v) {
+  if (v === null || v === undefined) return '';
+  return capLabel_(scrubContacts_(String(v)));
+}
+
+/**
+ * 'Template: <name>' passes through (contacts scrubbed). Free text also loses $ amounts,
+ * digits and this row's lead name, matching the n8n normalization.
+ */
+function cleanManualLabel_(v, leadName) {
+  if (v === null || v === undefined) return '';
+  var s = scrubContacts_(String(v));
+  if (!/^\s*template:/i.test(s)) {
+    s = s.replace(/\$\s*[\d,]*(\.\d+)?/g, ' ').replace(/\d+/g, ' ');
+    s = stripName_(s, leadName);
+    s = s.replace(/\s+([,.;:!?])/g, '$1').replace(/(^|\s)[^\p{L}\p{N}\s]+(?=\s|$)/gu, '$1');
+  }
+  return capLabel_(s);
+}
+
+/** Removes the full lead name and each name part (2+ letters) as whole words. */
+function stripName_(s, leadName) {
+  var name = String(leadName === null || leadName === undefined ? '' : leadName).trim();
+  if (!name) return s;
+  var parts = [name].concat(name.split(/\s+/)).filter(function (p) { return p.length >= 2; });
+  parts.forEach(function (p) {
+    var escaped = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    s = s.replace(new RegExp('(^|[^\\p{L}\\p{N}])' + escaped + '(?=$|[^\\p{L}\\p{N}])', 'giu'), '$1 ');
+  });
+  return s;
+}
+
+/** Only a 12-hex hash is accepted; anything else (e.g. a raw id or email) is dropped. */
+function cleanLeadKey_(v) {
+  var s = String(v === null || v === undefined ? '' : v).trim().toLowerCase();
+  return /^[0-9a-f]{12}$/.test(s) ? s : '';
 }
 
 function toMillis_(v) {

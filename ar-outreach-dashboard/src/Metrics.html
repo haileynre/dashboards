@@ -71,6 +71,11 @@ var Metrics = (function () {
     fields.forEach(function (f, i) { ix[f] = i; });
     var pick = function (r, name) { return Array.isArray(r) ? r[ix[name]] : r[name]; };
 
+    var text = function (r, name) {
+      var v = pick(r, name);
+      return v === null || v === undefined ? '' : String(v).trim();
+    };
+
     var out = [];
     raw.forEach(function (r) {
       var date = String(pick(r, 'date') || '').trim();
@@ -86,7 +91,12 @@ var Metrics = (function () {
         month: /^\d{4}-\d{2}$/.test(month) ? month : date.slice(0, 7),
         via_sequence: toBool(pick(r, 'via_sequence')),
         opened: channel === 'email' && toBool(pick(r, 'opened')),
-        responded: toBool(pick(r, 'responded'))
+        responded: toBool(pick(r, 'responded')),
+        sequence_name: text(r, 'sequence_name'),
+        template_label: text(r, 'template_label'),
+        step_label: text(r, 'step_label'),
+        manual_label: text(r, 'manual_label'),
+        lead_key: text(r, 'lead_key').toLowerCase()
       });
     });
     return out;
@@ -243,14 +253,30 @@ var Metrics = (function () {
    */
   function trend(rows, grain, opts) {
     opts = opts || {};
-    var start = opts.start;
-    var end = opts.end;
+    var ax = trendAxis(rows, grain, opts.start, opts.end);
+    var keys = ax.keys;
+
+    var users = opts.users || listUsers(rows);
+    var series = emptySeries(keys.length);
+    var perUser = {};
+    users.forEach(function (u) { perUser[u] = emptySeries(keys.length); });
+
+    rows.forEach(function (r) {
+      var i = ax.index[bucketOf(r, grain)];
+      addToSeries(series, i, r);
+      if (perUser[r.user_name]) addToSeries(perUser[r.user_name], i, r);
+    });
+
+    return { keys: keys, series: series, byUser: perUser };
+  }
+
+  /** Sorted bucket keys covering start..end (default: the rows' own range) plus any row outside it. */
+  function trendAxis(rows, grain, start, end) {
     if (!start || !end) {
       var dates = rows.map(function (r) { return r.date; }).sort();
       start = start || dates[0];
       end = end || dates[dates.length - 1];
     }
-
     var keys = bucketRange(start, end, grain);
     var known = {};
     keys.forEach(function (k) { known[k] = true; });
@@ -261,25 +287,214 @@ var Metrics = (function () {
     keys.sort();
     var index = {};
     keys.forEach(function (k, i) { index[k] = i; });
+    return { keys: keys, index: index };
+  }
 
-    var users = opts.users || listUsers(rows);
-    var series = emptySeries(keys.length);
-    var perUser = {};
-    users.forEach(function (u) { perUser[u] = emptySeries(keys.length); });
+  function addToSeries(t, i, r) {
+    if (r.channel === 'email') t.emailsSent[i]++;
+    else t.smsSent[i]++;
+    if (r.responded) t.responses[i]++;
+    t.total[i]++;
+  }
 
-    rows.forEach(function (r) {
-      var i = index[bucketOf(r, grain)];
-      var targets = [series];
-      if (perUser[r.user_name]) targets.push(perUser[r.user_name]);
-      targets.forEach(function (t) {
-        if (r.channel === 'email') t.emailsSent[i]++;
-        else t.smsSent[i]++;
-        if (r.responded) t.responses[i]++;
-        t.total[i]++;
-      });
+  /* ---------- sequences ---------- */
+
+  var SEQUENCE_FIELDS = ['sequence_name', 'template_label', 'step_label', 'manual_label', 'lead_key'];
+  var MANUAL_SEQUENCE = 'Manual (no sequence)';
+  var NO_STEP = 'No step or template label';
+  var OTHER_MANUAL = 'Other one-off manual messages';
+  var UNLABELED = 'Unlabeled';
+
+  /**
+   * Whether the Sequences tab has data to show. Unavailable when the sheet lacks any of the
+   * sequence columns (server lists them in missing_columns; an older payload lacks the fields),
+   * or when the columns exist but no row has been filled in yet.
+   */
+  function sequenceDataStatus(payload, rows) {
+    var fields = (payload && payload.fields) || [];
+    var reported = (payload && payload.missing_columns) || [];
+    var missing = SEQUENCE_FIELDS.filter(function (f) {
+      return fields.indexOf(f) < 0 || reported.indexOf(f) >= 0;
     });
+    if (missing.length) return { available: false, reason: 'missing_columns', missing: missing };
+    var filled = (rows || []).some(function (r) { return r.sequence_name || r.manual_label || r.lead_key; });
+    if (rows && rows.length && !filled) return { available: false, reason: 'not_filled', missing: [] };
+    return { available: true, reason: '', missing: [] };
+  }
 
-    return { keys: keys, series: series, byUser: perUser };
+  /** Unique non-empty lead_key values. */
+  function distinctLeads(rows) {
+    var seen = {};
+    var n = 0;
+    rows.forEach(function (r) {
+      if (r.lead_key && !seen[r.lead_key]) { seen[r.lead_key] = true; n++; }
+    });
+    return n;
+  }
+
+  function groupRows(rows, keyFn) {
+    var order = [];
+    var groups = {};
+    rows.forEach(function (r) {
+      var k = keyFn(r);
+      if (!Object.prototype.hasOwnProperty.call(groups, k)) { groups[k] = []; order.push(k); }
+      groups[k].push(r);
+    });
+    return order.map(function (k) { return { key: k, rows: groups[k] }; });
+  }
+
+  function summarizeGroup(name, rows) {
+    var s = summarize(rows);
+    s.name = name;
+    s.distinctLeads = distinctLeads(rows);
+    return s;
+  }
+
+  function compareName(a, b) {
+    return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+  }
+
+  function bySends(a, b) {
+    return b.totalSent - a.totalSent || compareName(a, b);
+  }
+
+  function sequenceKey(row) {
+    return row.sequence_name || MANUAL_SEQUENCE;
+  }
+
+  function rowsForSequence(rows, name) {
+    return rows.filter(function (r) { return sequenceKey(r) === name; });
+  }
+
+  /** One summary per sequence_name (+ distinctLeads), most sends first, Manual last. */
+  function bySequence(rows) {
+    var list = groupRows(rows, sequenceKey).map(function (g) {
+      var s = summarizeGroup(g.key, g.rows);
+      s.isManual = g.key === MANUAL_SEQUENCE;
+      return s;
+    });
+    return sortSequences(list, 'totalSent', 'desc');
+  }
+
+  /** Sorts by any summary key; empty rates sort last; the Manual row always stays last. */
+  function sortSequences(groups, key, dir) {
+    var sign = dir === 'asc' ? 1 : -1;
+    return groups.slice().sort(function (a, b) {
+      if (!!a.isManual !== !!b.isManual) return a.isManual ? 1 : -1;
+      if (key === 'name') return sign * compareName(a, b);
+      var va = a[key];
+      var vb = b[key];
+      var aNull = va === null || va === undefined;
+      var bNull = vb === null || vb === undefined;
+      if (aNull !== bNull) return aNull ? 1 : -1;
+      if (!aNull && va !== vb) return sign * (va - vb);
+      return bySends(a, b);
+    });
+  }
+
+  function stepKey(row) {
+    return row.step_label || row.template_label || NO_STEP;
+  }
+
+  function stepNumber(name) {
+    var m = /^step\s*(\d+)/i.exec(name);
+    return m ? +m[1] : null;
+  }
+
+  /** Per step_label (falling back to template_label): 'Step N' in order, then by sends, unlabeled last. */
+  function byStep(rows) {
+    return groupRows(rows, stepKey).map(function (g) {
+      return summarizeGroup(g.key, g.rows);
+    }).sort(function (a, b) {
+      if ((a.name === NO_STEP) !== (b.name === NO_STEP)) return a.name === NO_STEP ? 1 : -1;
+      var na = stepNumber(a.name);
+      var nb = stepNumber(b.name);
+      if ((na === null) !== (nb === null)) return na === null ? 1 : -1;
+      if (na !== null && na !== nb) return na - nb;
+      return bySends(a, b);
+    });
+  }
+
+  /** Expanded-row detail for one sequence's rows: a per-rep split and the step breakdown. */
+  function sequenceDetail(rows, users) {
+    return {
+      reps: users.map(function (u) {
+        var s = summarizeGroup(u, rows.filter(function (r) { return r.user_name === u; }));
+        s.user = u;
+        return s;
+      }),
+      steps: byStep(rows)
+    };
+  }
+
+  /** Names of the n real sequences (not Manual) with the most sends. */
+  function topSequenceNames(groups, n) {
+    return groups.filter(function (g) { return !g.isManual; })
+      .slice().sort(bySends).slice(0, n)
+      .map(function (g) { return g.name; });
+  }
+
+  /**
+   * Like trend(), but one series per sequence name. The axis spans all `rows`.
+   * @param {{start?: string, end?: string, names: string[]}} opts
+   */
+  function sequenceTrend(rows, grain, opts) {
+    opts = opts || {};
+    var ax = trendAxis(rows, grain, opts.start, opts.end);
+    var names = opts.names || bySequence(rows).map(function (g) { return g.name; });
+    var out = {};
+    names.forEach(function (n) { out[n] = emptySeries(ax.keys.length); });
+    rows.forEach(function (r) {
+      var k = sequenceKey(r);
+      if (Object.prototype.hasOwnProperty.call(out, k)) addToSeries(out[k], ax.index[bucketOf(r, grain)], r);
+    });
+    return { keys: ax.keys, bySequence: out };
+  }
+
+  function isTemplateLabel(label) {
+    return /^template:/i.test(label);
+  }
+
+  /**
+   * Non-sequence rows (empty sequence_name) grouped by manual_label, ranked by sends.
+   * 'Template: ...' groups always count; a free-text group needs >= minLeads distinct
+   * lead_keys, otherwise it is rolled into `other`. Empty labels go to `unlabeled`.
+   * @param {{limit?: number, minLeads?: number}} opts  defaults 10 and 3.
+   */
+  function topManualMessages(rows, opts) {
+    opts = opts || {};
+    var limit = opts.limit || 10;
+    var minLeads = opts.minLeads || 3;
+    var manual = rows.filter(function (r) { return !r.sequence_name; });
+
+    var ranked = [];
+    var otherRows = [];
+    var otherGroups = 0;
+    var unlabeledRows = [];
+    groupRows(manual, function (r) { return r.manual_label; }).forEach(function (g) {
+      if (!g.key) {
+        unlabeledRows = g.rows;
+      } else if (isTemplateLabel(g.key) || distinctLeads(g.rows) >= minLeads) {
+        ranked.push(summarizeGroup(g.key, g.rows));
+      } else {
+        otherRows = otherRows.concat(g.rows);
+        otherGroups++;
+      }
+    });
+    ranked.sort(bySends);
+
+    var other = null;
+    if (otherRows.length) {
+      other = summarizeGroup(OTHER_MANUAL, otherRows);
+      other.groupCount = otherGroups;
+    }
+    return {
+      top: ranked.slice(0, limit),
+      rankedCount: ranked.length,
+      other: other,
+      unlabeled: unlabeledRows.length ? summarizeGroup(UNLABELED, unlabeledRows) : null,
+      manualSent: manual.length
+    };
   }
 
   /* ---------- labels ---------- */
@@ -331,6 +546,21 @@ var Metrics = (function () {
     bucketOf: bucketOf,
     bucketRange: bucketRange,
     trend: trend,
+    SEQUENCE_FIELDS: SEQUENCE_FIELDS,
+    MANUAL_SEQUENCE: MANUAL_SEQUENCE,
+    NO_STEP: NO_STEP,
+    OTHER_MANUAL: OTHER_MANUAL,
+    UNLABELED: UNLABELED,
+    sequenceDataStatus: sequenceDataStatus,
+    distinctLeads: distinctLeads,
+    bySequence: bySequence,
+    sortSequences: sortSequences,
+    rowsForSequence: rowsForSequence,
+    byStep: byStep,
+    sequenceDetail: sequenceDetail,
+    topSequenceNames: topSequenceNames,
+    sequenceTrend: sequenceTrend,
+    topManualMessages: topManualMessages,
     bucketLabel: bucketLabel,
     formatDateKey: formatDateKey,
     formatRange: formatRange,

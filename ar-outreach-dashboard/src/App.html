@@ -5,6 +5,8 @@
   var REP_COLORS = ['#4f46e5', '#0d9488', '#ea580c'];
   var EXTRA_COLORS = ['#64748b', '#a21caf', '#0891b2', '#b45309', '#be185d'];
   var METRIC_COLORS = { emailsSent: '#2563eb', smsSent: '#9333ea', responses: '#16a34a' };
+  var SEQ_COLORS = ['#1f4fd8', '#0d9488', '#ea580c', '#a21caf', '#64748b'];
+  var TOP5 = '__top5__';
   var METRIC_LABELS = {
     total: 'All messages sent',
     emailsSent: 'Emails sent',
@@ -41,9 +43,16 @@
     chartType: 'line',
     stackByUser: false,
     stackMetric: 'total',
-    userChartMode: 'counts'
+    userChartMode: 'counts',
+    tab: 'overview',
+    filtered: [],
+    seqStatus: { available: false, reason: '', missing: [] },
+    seqSort: { key: 'totalSent', dir: 'desc' },
+    seqExpanded: {},
+    seqGrain: 'week',
+    seqTrendPick: TOP5
   };
-  var charts = { userChart: null, trendChart: null };
+  var charts = { userChart: null, trendChart: null, seqTrendChart: null };
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -106,6 +115,14 @@
     $('stackByUser').checked = state.stackByUser;
     $('stackMetric').value = state.stackMetric;
     $('stackMetric').hidden = !state.stackByUser;
+    syncSegmented('seqGrainGroup', 'data-value', state.seqGrain);
+    Array.prototype.forEach.call($('tabNav').querySelectorAll('[data-tab]'), function (t) {
+      var on = t.getAttribute('data-tab') === state.tab;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+    });
+    $('overviewView').hidden = state.tab !== 'overview';
+    $('sequencesView').hidden = state.tab !== 'sequences';
   }
 
   /* ---------- filters ---------- */
@@ -365,6 +382,177 @@
     drawChart('trendChart', { type: isLine ? 'line' : 'bar', data: { labels: labels, datasets: datasets }, options: options });
   }
 
+  /* ---------- sequences tab ---------- */
+
+  function seqCells(s) {
+    return '<td class="num">' + Metrics.formatInt(s.emailsSent) + '</td>' +
+      '<td class="num">' + Metrics.formatInt(s.emailsOpened) + '</td>' +
+      '<td class="num">' + Metrics.formatInt(s.emailsResponded) + '</td>' +
+      '<td class="num">' + Metrics.formatInt(s.smsSent) + '</td>' +
+      '<td class="num">' + Metrics.formatInt(s.smsResponded) + '</td>' +
+      '<td class="num">' + Metrics.formatPct(s.openRate) + '</td>' +
+      '<td class="num">' + Metrics.formatPct(s.responseRate) + '</td>' +
+      '<td class="num">' + Metrics.formatInt(s.distinctLeads) + '</td>';
+  }
+
+  var SUB_HEAD = '<th scope="col" class="num">Emails sent</th><th scope="col" class="num">Emails opened</th>' +
+    '<th scope="col" class="num">Emails responded</th><th scope="col" class="num">SMS sent</th>' +
+    '<th scope="col" class="num">SMS responded</th><th scope="col" class="num">Open rate</th>' +
+    '<th scope="col" class="num">Response rate</th><th scope="col" class="num">Distinct leads</th>';
+
+  function detailRowHtml(name, filtered) {
+    var d = Metrics.sequenceDetail(Metrics.rowsForSequence(filtered, name), selectedUsers());
+    var reps = d.reps.map(function (s) {
+      return '<tr><td><span class="swatch" style="background:' + userColor(s.user) + '"></span>' +
+        escapeHtml(s.user) + '</td>' + seqCells(s) + '</tr>';
+    }).join('') || '<tr><td colspan="9" class="muted">No reps selected.</td></tr>';
+    var steps = d.steps.map(function (s) {
+      return '<tr><td class="label-cell">' + escapeHtml(s.name) + '</td>' + seqCells(s) + '</tr>';
+    }).join('');
+    return '<tr class="detail-row"><td colspan="9"><div class="detail-grid">' +
+      '<div><h3>By rep</h3><div class="table-wrap"><table class="data-table sub"><thead><tr><th scope="col">Rep</th>' +
+      SUB_HEAD + '</tr></thead><tbody>' + reps + '</tbody></table></div></div>' +
+      '<div><h3>By step / template</h3><div class="table-wrap"><table class="data-table sub"><thead><tr><th scope="col">Step / template</th>' +
+      SUB_HEAD + '</tr></thead><tbody>' + steps + '</tbody></table></div></div>' +
+      '</div></td></tr>';
+  }
+
+  function renderSequenceTable(filtered) {
+    var sort = state.seqSort;
+    Array.prototype.forEach.call($('seqTable').querySelectorAll('th'), function (th) {
+      var btn = th.querySelector('[data-sort]');
+      if (btn && btn.getAttribute('data-sort') === sort.key) {
+        th.setAttribute('aria-sort', sort.dir === 'asc' ? 'ascending' : 'descending');
+      } else {
+        th.removeAttribute('aria-sort');
+      }
+    });
+
+    var groups = Metrics.sortSequences(Metrics.bySequence(filtered), sort.key, sort.dir);
+    var tbody = $('seqTable').querySelector('tbody');
+    if (!groups.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="muted">' +
+        (selectedUsers().length ? 'No messages match these filters.' : 'Select at least one rep.') + '</td></tr>';
+      $('seqTable').querySelector('tfoot').innerHTML = '';
+      return;
+    }
+    tbody.innerHTML = groups.map(function (g) {
+      var open = !!state.seqExpanded[g.name];
+      return '<tr class="seq-row' + (g.isManual ? ' is-manual' : '') + '" tabindex="0" aria-expanded="' + open +
+        '" data-seq="' + escapeHtml(g.name) + '"><td class="label-cell"><span class="caret" aria-hidden="true">\u25b8</span>' +
+        escapeHtml(g.name) + '</td>' + seqCells(g) + '</tr>' +
+        (open ? detailRowHtml(g.name, filtered) : '');
+    }).join('');
+
+    var total = Metrics.summarize(filtered);
+    total.distinctLeads = Metrics.distinctLeads(filtered);
+    $('seqTable').querySelector('tfoot').innerHTML = groups.length > 1
+      ? '<tr><td>All sequences + manual</td>' + seqCells(total) + '</tr>'
+      : '';
+  }
+
+  function toggleSequence(row) {
+    var name = row.getAttribute('data-seq');
+    state.seqExpanded[name] = !state.seqExpanded[name];
+    renderSequenceTable(state.filtered);
+    var rows = $('seqTable').querySelectorAll('tr.seq-row');
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].getAttribute('data-seq') === name) { rows[i].focus(); break; }
+    }
+  }
+
+  function renderSequenceTrend(filtered) {
+    var groups = Metrics.bySequence(filtered);
+    var names = groups.map(function (g) { return g.name; });
+    if (state.seqTrendPick !== TOP5 && names.indexOf(state.seqTrendPick) < 0) state.seqTrendPick = TOP5;
+    $('seqTrendPick').innerHTML = '<option value="' + TOP5 + '">Compare top 5 by sends</option>' +
+      names.map(function (n) { return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>'; }).join('');
+    $('seqTrendPick').value = state.seqTrendPick;
+
+    if (!filtered.length) {
+      drawChart('seqTrendChart', null, selectedUsers().length ? 'No messages match these filters.' : 'Select at least one rep.');
+      return;
+    }
+
+    var f = state.filters;
+    var compare = state.seqTrendPick === TOP5;
+    var picked = compare ? Metrics.topSequenceNames(groups, 5) : [state.seqTrendPick];
+    if (!picked.length) {
+      drawChart('seqTrendChart', null, 'No sequence messages match these filters. Pick "Manual (no sequence)" to chart manual messages.');
+      return;
+    }
+    var t = Metrics.sequenceTrend(filtered, state.seqGrain, { start: f.start, end: f.end, names: picked });
+    var labels = t.keys.map(function (k) { return Metrics.bucketLabel(k, state.seqGrain); });
+    var pointRadius = t.keys.length > 60 ? 0 : 3;
+
+    var datasets = compare
+      ? picked.map(function (name, i) {
+        var color = SEQ_COLORS[i % SEQ_COLORS.length];
+        return {
+          label: name, data: t.bySequence[name].total,
+          backgroundColor: hexToRgba(color, 0.15), borderColor: color, borderWidth: 2,
+          fill: false, tension: 0.25, cubicInterpolationMode: 'monotone', pointRadius: pointRadius
+        };
+      })
+      : ['emailsSent', 'smsSent', 'responses'].map(function (key) {
+        var color = METRIC_COLORS[key];
+        return {
+          label: METRIC_LABELS[key], data: t.bySequence[picked[0]][key],
+          backgroundColor: hexToRgba(color, 0.15), borderColor: color, borderWidth: 2,
+          fill: false, tension: 0.25, cubicInterpolationMode: 'monotone', pointRadius: pointRadius
+        };
+      });
+
+    var options = baseOptions();
+    options.scales.x.ticks = { autoSkip: true, maxRotation: 0, maxTicksLimit: 12 };
+    options.plugins.title = {
+      display: true, align: 'start', color: '#667085',
+      text: compare ? 'Messages sent (email + SMS) per sequence' : picked[0]
+    };
+    drawChart('seqTrendChart', { type: 'line', data: { labels: labels, datasets: datasets }, options: options });
+  }
+
+  function renderManualTable(filtered) {
+    var m = Metrics.topManualMessages(filtered, { limit: 10, minLeads: 3 });
+    var cells = function (s) {
+      return '<td class="label-cell">' + escapeHtml(s.name) +
+        (s.groupCount ? ' <span class="muted">(' + Metrics.formatInt(s.groupCount) + ' distinct messages)</span>' : '') + '</td>' +
+        '<td class="num">' + Metrics.formatInt(s.totalSent) + '</td>' +
+        '<td class="num">' + Metrics.formatInt(s.emailsOpened) + '</td>' +
+        '<td class="num">' + Metrics.formatInt(s.totalResponded) + '</td>' +
+        '<td class="num">' + Metrics.formatPct(s.responseRate) + '</td>';
+    };
+    var body = m.top.map(function (s, i) {
+      return '<tr><td class="num">' + (i + 1) + '</td>' + cells(s) + '</tr>';
+    });
+    [m.other, m.unlabeled].forEach(function (s) {
+      if (s) body.push('<tr class="row-rollup"><td class="num">\u2014</td>' + cells(s) + '</tr>');
+    });
+    $('manualTable').querySelector('tbody').innerHTML = body.length
+      ? body.join('')
+      : '<tr><td colspan="6" class="muted">No manual (non-sequence) messages match these filters.</td></tr>';
+    $('manualTable').querySelector('tfoot').innerHTML = m.rankedCount > m.top.length
+      ? '<tr><td colspan="6" class="muted">Showing the top ' + m.top.length + ' of ' +
+        Metrics.formatInt(m.rankedCount) + ' message groups.</td></tr>'
+      : '';
+  }
+
+  function renderSequences(filtered) {
+    var status = state.seqStatus;
+    $('seqUnavailable').hidden = status.available;
+    $('seqBody').hidden = !status.available;
+    if (!status.available) {
+      $('seqUnavailableDetail').textContent = status.reason === 'missing_columns'
+        ? 'The messages sheet does not have these columns yet: ' + status.missing.join(', ') +
+          '. The Overview tab is unaffected.'
+        : 'The sequence columns exist but have not been filled in yet; they appear after the next daily refresh. The Overview tab is unaffected.';
+      return;
+    }
+    renderSequenceTable(filtered);
+    renderSequenceTrend(filtered);
+    renderManualTable(filtered);
+  }
+
   function update() {
     syncControls();
     if (!state.loaded) return;
@@ -381,10 +569,15 @@
       }));
     }
 
+    state.filtered = filtered;
     renderSummary(filtered, prevRange);
-    renderKpis(Metrics.summarize(filtered), previous, prevRange);
-    renderUsers(filtered);
-    renderTrend(filtered);
+    if (state.tab === 'sequences') {
+      renderSequences(filtered);
+    } else {
+      renderKpis(Metrics.summarize(filtered), previous, prevRange);
+      renderUsers(filtered);
+      renderTrend(filtered);
+    }
 
     var emptyText = '';
     if (!state.rows.length) emptyText = 'The messages sheet has no rows yet. Data appears after the next daily refresh (06:00 America/Phoenix).';
@@ -434,6 +627,7 @@
       if (firstLoad || state.users.indexOf(u) < 0) state.selected[u] = true;
     });
     state.users = users;
+    state.seqStatus = Metrics.sequenceDataStatus(payload, state.rows);
     state.loaded = true;
 
     $('lastUpdated').textContent = formatTimestamp(payload.last_updated);
@@ -444,6 +638,7 @@
 
     $('content').hidden = false;
     $('filters').hidden = false;
+    $('tabNav').hidden = false;
     setBusy(false);
     buildUserChips();
     update();
@@ -458,6 +653,7 @@
     if (!state.loaded) {
       $('content').hidden = true;
       $('filters').hidden = true;
+      $('tabNav').hidden = true;
     }
   }
 
@@ -496,6 +692,40 @@
 
     $('stackByUser').addEventListener('change', function (e) { state.stackByUser = e.target.checked; update(); });
     $('stackMetric').addEventListener('change', function (e) { state.stackMetric = e.target.value; update(); });
+
+    $('tabNav').addEventListener('click', function (e) {
+      var tab = e.target.closest('[data-tab]');
+      if (!tab || tab.getAttribute('data-tab') === state.tab) return;
+      state.tab = tab.getAttribute('data-tab');
+      update();
+    });
+    $('tabNav').addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      state.tab = state.tab === 'overview' ? 'sequences' : 'overview';
+      update();
+      $('tab-' + state.tab).focus();
+    });
+
+    bindSegmented('seqGrainGroup', 'data-value', function (g) { state.seqGrain = g; update(); });
+    $('seqTrendPick').addEventListener('change', function (e) { state.seqTrendPick = e.target.value; update(); });
+    $('seqTable').querySelector('thead').addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-sort]');
+      if (!btn) return;
+      var key = btn.getAttribute('data-sort');
+      if (state.seqSort.key === key) state.seqSort.dir = state.seqSort.dir === 'asc' ? 'desc' : 'asc';
+      else state.seqSort = { key: key, dir: key === 'name' ? 'asc' : 'desc' };
+      renderSequenceTable(state.filtered);
+    });
+    $('seqTable').querySelector('tbody').addEventListener('click', function (e) {
+      var row = e.target.closest('tr.seq-row');
+      if (row) toggleSequence(row);
+    });
+    $('seqTable').querySelector('tbody').addEventListener('keydown', function (e) {
+      var row = e.target.closest('tr.seq-row');
+      if (!row || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      toggleSequence(row);
+    });
 
     $('refreshBtn').addEventListener('click', function () { load(true); });
     $('retryBtn').addEventListener('click', function () { load(true); });

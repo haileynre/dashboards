@@ -232,6 +232,61 @@
   .data-table tfoot td { font-weight: 700; border-bottom: 0; border-top: 2px solid var(--border); }
   .data-table .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
 
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .tab {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    background: none;
+    padding: 8px 14px;
+    font: inherit;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .tab:hover { color: var(--text); }
+  .tab[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* ---------- sequences ---------- */
+  .panel-hint { margin: -4px 0 12px; color: var(--muted); font-size: 13px; max-width: 900px; }
+  .panel-hint code { font-size: 12px; }
+  .sort-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+  .sort-btn:hover { color: var(--text); }
+  .sort-btn .arrow::after { content: "\2195"; opacity: 0.35; }
+  th[aria-sort="ascending"] .sort-btn, th[aria-sort="descending"] .sort-btn { color: var(--text); }
+  th[aria-sort="ascending"] .arrow::after { content: "\2191"; opacity: 1; }
+  th[aria-sort="descending"] .arrow::after { content: "\2193"; opacity: 1; }
+  .seq-row { cursor: pointer; }
+  .seq-row:hover > td { background: #f7f9fd; }
+  .seq-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+  .seq-row.is-manual > td:first-child { font-style: italic; }
+  .caret { display: inline-block; width: 1.1em; color: var(--muted); transition: transform 0.15s; }
+  .seq-row[aria-expanded="true"] .caret { transform: rotate(90deg); }
+  .detail-row > td { background: #f9fafc; padding: 12px 16px 16px; white-space: normal; }
+  .detail-grid { display: grid; gap: 14px; }
+  .detail-grid h3 {
+    font-size: 12px;
+    margin: 0 0 6px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .data-table.sub { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+  .data-table.sub th, .data-table.sub td { padding: 6px 10px; }
+  .data-table .label-cell { white-space: normal; min-width: 220px; max-width: 460px; }
+  .data-table .row-rollup td { color: var(--muted); font-style: italic; }
+
   /* ---------- loading ---------- */
   #content.is-loading .kpi-value,
   #content.is-loading .kpi-delta,

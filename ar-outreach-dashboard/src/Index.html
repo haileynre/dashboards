@@ -76,7 +76,13 @@
     <span id="emptyMessage">No messages match these filters.</span>
   </div>
 
+  <nav class="tabs" id="tabNav" role="tablist" aria-label="Dashboard views">
+    <button type="button" class="tab" role="tab" id="tab-overview" data-tab="overview" aria-controls="overviewView">Overview</button>
+    <button type="button" class="tab" role="tab" id="tab-sequences" data-tab="sequences" aria-controls="sequencesView">Sequences</button>
+  </nav>
+
   <main id="content" class="is-loading" aria-busy="true">
+   <div id="overviewView" role="tabpanel" aria-labelledby="tab-overview">
     <section class="kpis" id="kpiGrid" aria-label="Key metrics"></section>
 
     <section class="card panel" aria-labelledby="userHeading">
@@ -140,11 +146,100 @@
         <div class="chart-note" hidden></div>
       </div>
     </section>
+   </div>
+
+   <div id="sequencesView" role="tabpanel" aria-labelledby="tab-sequences" hidden>
+    <div id="seqUnavailable" class="banner banner-info" hidden>
+      <div>
+        <strong>Sequence data not available yet.</strong>
+        <span id="seqUnavailableDetail"></span>
+      </div>
+    </div>
+
+    <div id="seqBody">
+    <section class="card panel" aria-labelledby="seqHeading">
+      <div class="panel-head">
+        <h2 id="seqHeading">Sequences</h2>
+      </div>
+      <p class="panel-hint">
+        One row per Close sequence; messages sent outside a sequence are under <em>Manual (no sequence)</em>.
+        Click a row for the per-rep split and the per-step breakdown. <em>Distinct leads</em> counts unique leads, not messages.
+        The Sequence / Manual filter uses <code>via_sequence</code>, which is true only for the AR reminder sequence.
+      </p>
+      <div class="table-wrap">
+        <table class="data-table" id="seqTable">
+          <thead>
+            <tr>
+              <th scope="col"><button type="button" class="sort-btn" data-sort="name">Sequence<span class="arrow" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num"><button type="button" class="sort-btn" data-sort="emailsSent">Emails sent<span class="arrow" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num"><button type="button" class="sort-btn" data-sort="emailsOpened">Emails opened<span class="arrow" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num"><button type="button" class="sort-btn" data-sort="emailsResponded">Emails responded<span class="arrow" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num"><button type="button" class="sort-btn" data-sort="smsSent">SMS sent<span class="arrow" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num"><button type="button" class="sort-btn" data-sort="smsResponded">SMS responded<span class="arrow" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num"><button type="button" class="sort-btn" data-sort="openRate">Open rate<span class="arrow" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num"><button type="button" class="sort-btn" data-sort="responseRate">Response rate<span class="arrow" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num"><button type="button" class="sort-btn" data-sort="distinctLeads">Distinct leads<span class="arrow" aria-hidden="true"></span></button></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <section class="card panel" aria-labelledby="seqTrendHeading">
+      <div class="panel-head">
+        <h2 id="seqTrendHeading">Sequence trend</h2>
+        <div class="panel-controls">
+          <div class="segmented small" id="seqGrainGroup" role="group" aria-label="Bucket by">
+            <button type="button" data-value="day">Day</button>
+            <button type="button" data-value="week">Week</button>
+            <button type="button" data-value="month">Month</button>
+          </div>
+          <select id="seqTrendPick" aria-label="Sequence to chart">
+            <option value="__top5__">Compare top 5 by sends</option>
+          </select>
+        </div>
+      </div>
+      <div class="chart-box chart-box-tall">
+        <canvas id="seqTrendChart" role="img" aria-label="Trend chart of messages sent per sequence"></canvas>
+        <div class="chart-note" hidden></div>
+      </div>
+    </section>
+
+    <section class="card panel" aria-labelledby="manualHeading">
+      <div class="panel-head">
+        <h2 id="manualHeading">Top 10 manual messages</h2>
+      </div>
+      <p class="panel-hint">
+        Messages sent outside any sequence, grouped by template or by normalized message text (names, amounts and digits removed).
+        Free-text messages appear only once they reach at least 3 distinct leads; the rest are counted in <em>Other one-off manual messages</em>.
+      </p>
+      <div class="table-wrap">
+        <table class="data-table" id="manualTable">
+          <thead>
+            <tr>
+              <th scope="col" class="num">#</th>
+              <th scope="col">Message</th>
+              <th scope="col" class="num">Sends</th>
+              <th scope="col" class="num">Emails opened</th>
+              <th scope="col" class="num">Responses</th>
+              <th scope="col" class="num">Response rate</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </div>
+    </section>
+    </div>
+   </div>
   </main>
 
   <footer class="page-footer">
     Data refreshes daily at 06:00 America/Phoenix from Close via n8n. This page loads only aggregate fields
-    (channel, rep, dates, sequence / opened / responded flags) and never lead names or contact details.
+    (channel, rep, dates, sequence / opened / responded flags, sequence, step and template names, normalized manual-message
+    labels, and an anonymous lead key) and never lead names or contact details.
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
