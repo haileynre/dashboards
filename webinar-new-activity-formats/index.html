@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Webinar "01. New Activity" field formats — SOP</title>
+<title>Webinar "01. New Activity" SOP</title>
 <script>
   (function(){var t;try{t=localStorage.getItem('nre-theme')}catch(e){}
     document.documentElement.setAttribute('data-theme',t||'light');})();
@@ -93,6 +93,27 @@
   details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:4px 16px;margin:12px 0}
   details[open]{padding-bottom:12px}
   summary{cursor:pointer;font-weight:700;font-size:16px;padding:10px 0}
+  .tab{position:relative}
+  .tab-btn{font-size:13.5px;font-weight:600;background:transparent;color:var(--dim);border:1px solid transparent;
+    border-radius:7px;padding:6px 12px}
+  .tab-btn:hover{background:var(--panel2);color:var(--ink)}
+  .tab-btn.on{color:var(--accent);background:var(--accent-dim);border-color:var(--accent)}
+  .menu{display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:240px;background:var(--panel);
+    border:1px solid var(--line);border-radius:var(--radius);padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:20}
+  .tab.open .menu{display:block}
+  .menu a{display:block;font-size:13.5px;color:var(--ink);text-decoration:none;padding:6px 10px;border-radius:6px}
+  .menu a:hover{background:var(--panel2)}
+  .view[hidden]{display:none}
+  .view-title{font-size:22px;letter-spacing:-.02em;margin:8px 0 6px}
+  .std{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ok);
+    border-radius:var(--radius);padding:16px 18px;margin:16px 0}
+  .std .value{font:700 20px/1.3 var(--mono);margin:6px 0 4px}
+  .std dl{display:grid;grid-template-columns:150px 1fr;gap:6px 14px;margin:12px 0 0;font-size:14px}
+  .std dt{color:var(--dim)}
+  .std dd{margin:0}
+  .ok-mark{color:var(--ok);font-weight:700}
+  .no-mark{color:var(--err);font-weight:700}
+  .todo{display:inline-block;font:700 11px/1.2 var(--mono);padding:3px 8px;border-radius:99px;border:1px solid var(--warn);color:var(--warn)}
   #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);
     font-size:13px;padding:7px 14px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
   #toast.show{opacity:1}
@@ -102,16 +123,34 @@
 <body>
 
 <nav class="topbar"><div class="in">
-  <a href="#why">Why it matters</a>
-  <a href="#fields">Fields</a>
-  <a href="#types">Webinar types</a>
-  <a href="#quick">Quick reference</a>
-  <a href="#detail">Per brand</a>
-  <a href="#dates">Date formats</a>
-  <a href="#defects">Defects</a>
-  <a href="#sop">SOP</a>
-  <a href="#n8n">n8n gaps</a>
-  <a href="#repull">Re-pull</a>
+  <div class="tab" data-tab="historical">
+    <button class="tab-btn" data-view="historical" aria-haspopup="true">Historical Setup ▾</button>
+    <div class="menu">
+      <a href="#historical">Overview</a>
+      <a href="#why">Why it matters</a>
+      <a href="#fields">Fields</a>
+      <a href="#types">Webinar types</a>
+      <a href="#quick">Quick reference</a>
+      <a href="#detail">Per brand</a>
+      <a href="#dates">Date formats</a>
+      <a href="#defects">Defects</a>
+      <a href="#sop">SOP</a>
+      <a href="#n8n">n8n gaps</a>
+      <a href="#repull">Re-pull</a>
+    </div>
+  </div>
+  <div class="tab" data-tab="redesign">
+    <button class="tab-btn" data-view="redesign" aria-haspopup="true">Redesigned Standardization ▾</button>
+    <div class="menu">
+      <a href="#redesign">Overview</a>
+      <a href="#rd-why">Why we're standardizing</a>
+      <a href="#rd-replay">Standard 1 — Webinar Replay</a>
+      <a href="#rd-replaces">What it replaces</a>
+      <a href="#rd-field">The Funnel? field</a>
+      <a href="#rd-rollout">Rollout checklist</a>
+      <a href="#rd-next">Coming next</a>
+    </div>
+  </div>
   <span class="spacer"></span>
   <button id="theme-btn" onclick="nreToggleTheme()">☾ Dark mode</button>
 </div></nav>
@@ -119,12 +158,118 @@
 <main class="wrap">
 
 <header>
-  <h1>Webinar “01. New Activity” field formats</h1>
-  <p class="lede">What each brand writes into the funnel and notes fields of the Close
-  <code>01. New Activity</code> custom activity for <b>like-lives, true lives, lives and
-  AMAs / Fireside Chats</b>: the text, how the date is written, and where the brands disagree.</p>
-  <p class="stamp">Live Close data · pulled 2026-10-08 · all-time counts · click any pattern to copy it</p>
+  <h1>Webinar “01. New Activity” SOP</h1>
+  <p class="lede">How every brand records webinar activity on the Close <code>01. New Activity</code>
+  custom activity. <b>Redesigned Standardization</b> is the setup to follow from now on;
+  <b>Historical Setup</b> documents what each brand wrote before it.</p>
+  <p class="stamp">Click any pattern to copy it</p>
 </header>
+
+<section id="redesign" class="view">
+<h2 class="view-title">Redesigned Standardization</h2>
+<p class="stamp">Adopted 2026-10-08 · applies to every brand from now on</p>
+
+<h2 id="rd-why">Why we're standardizing</h2>
+<p>We're moving every brand to one naming and date format for webinar activity in Close so we can
+<b>track webinar performance reliably and make better decisions with our data</b>. Today the same
+kind of event is labeled at least five different ways (<code>Like Live</code>, <code>Subto Like Live</code>,
+<code>Gator Like Live - May 15th, 2026</code>, <code>LIKE LIVE - May 14 2026</code>, …), dates appear in
+seven formats, and tens of thousands of records lost their date entirely. That turns every
+cross-brand report into manual cleanup.</p>
+<div class="brands">
+  <div class="brand"><h4>Better tracking</h4><p class="dim">One filter finds every webinar replay in every brand — no list of spelling variations to maintain.</p></div>
+  <div class="brand"><h4>Comparable data</h4><p class="dim">Registrations, attendance and sales per replay line up across Subto, Gator, TC, ZDB and Deal Scout.</p></div>
+  <div class="brand"><h4>Faster reporting</h4><p class="dim">Smart views, dashboards and automations are built once and reused, instead of rebuilt per brand.</p></div>
+  <div class="brand"><h4>Problems surface early</h4><p class="dim">A missing or malformed date stands out immediately instead of hiding among format variations.</p></div>
+</div>
+<div class="callout">The goal is better business performance: knowing which webinars actually produce
+leads and sales lets us invest in the ones that work and fix or retire the ones that don't.</div>
+
+<h2 id="rd-replay">Standard 1 — Webinar Replay</h2>
+<p><b>“Webinar Replay” replaces every “Like Live” variation.</b> These are the pre-recorded
+WebinarJam / EverWebinar runs previously called like-lives.</p>
+<div class="std">
+  <div class="dim">Write exactly this into <code>Funnel?</code> on <code>01. New Activity</code>:</div>
+  <div class="value"><code class="copy">Webinar Replay - MM/DD/YYYY</code></div>
+  <div class="dim">Example: <code class="copy">Webinar Replay - 10/08/2026</code></div>
+  <dl>
+    <dt>Applies to</dt><dd>Every webinar replay, in every brand</dd>
+    <dt>Activity</dt><dd><code>01. New Activity</code></dd>
+    <dt>Field</dt><dd><code>Funnel?</code> (text) — now present in every brand org</dd>
+    <dt>Date</dt><dd>The replay's scheduled date, not the registration date. Two-digit month, two-digit day, four-digit year, in America/Phoenix time.</dd>
+  </dl>
+</div>
+
+<h3>Format rules</h3>
+<div class="tbl"><table>
+  <tr><th></th><th>Value</th><th>Why</th></tr>
+  <tr><td class="ok-mark">✓</td><td><code>Webinar Replay - 10/08/2026</code></td><td>Correct</td></tr>
+  <tr><td class="no-mark">✗</td><td><code>Like Live 10/08/2026</code></td><td>Old label</td></tr>
+  <tr><td class="no-mark">✗</td><td><code>Webinar Replay 10/08/2026</code></td><td>Missing <code> - </code> (space, hyphen, space)</td></tr>
+  <tr><td class="no-mark">✗</td><td><code>webinar replay - 10/08/2026</code></td><td>Capitalization must match exactly</td></tr>
+  <tr><td class="no-mark">✗</td><td><code>Webinar Replay - 10/8/2026</code></td><td>Month and day must be two digits</td></tr>
+  <tr><td class="no-mark">✗</td><td><code>Webinar Replay - 10/08/26</code></td><td>Year must be four digits</td></tr>
+  <tr><td class="no-mark">✗</td><td><code>Webinar Replay - October 8th, 2026</code></td><td>Numeric date only</td></tr>
+  <tr><td class="no-mark">✗</td><td><code>Subto Webinar Replay - 10/08/2026</code></td><td>No brand prefix — the Close org already identifies the brand</td></tr>
+  <tr><td class="no-mark">✗</td><td><code>Webinar Replay -</code></td><td>Never write the label without the date</td></tr>
+</table></div>
+
+<h2 id="rd-replaces">What it replaces</h2>
+<p>Where each brand recorded like-lives under the Historical Setup, and the new value:</p>
+<div class="tbl"><table>
+  <tr><th>Brand</th><th>Historical like-live record</th><th>New <code>Funnel?</code> value</th></tr>
+  <tr><td><b>Subto</b></td><td><code>Funnel?</code> <code>Like Live</code> + Notes <code>Like Live Registration 09/30/2026</code></td><td><code>Webinar Replay - 09/30/2026</code></td></tr>
+  <tr><td><b>Gator</b></td><td><code>Funnel</code> <code>Gator Webinar</code> + Notes <code>Like Live 08/28/2026</code></td><td><code>Webinar Replay - 08/28/2026</code></td></tr>
+  <tr><td><b>Top Tier TC</b></td><td><code>Funnel</code> <code>Webinar Funnel</code> + <code>Notes.</code> <code>Like Live 09/25/2026</code></td><td><code>Webinar Replay - 09/25/2026</code></td></tr>
+  <tr><td><b>ZDB</b></td><td><code>Funnel</code> <code>ZDB Webinar</code> + Notes <code>Like Live 09/23/2026</code></td><td><code>Webinar Replay - 09/23/2026</code></td></tr>
+  <tr><td><b>Deal Scout</b></td><td class="dim">Not part of the historical review</td><td><code>Webinar Replay - MM/DD/YYYY</code></td></tr>
+</table></div>
+<div class="callout warn"><b>Until decided otherwise, keep writing the existing fields.</b> Gator's Goal
+looks people up by the existing <code>Funnel</code> + <code>Notes</code> pair, so <code>Funnel?</code> is added
+alongside them rather than replacing them. Historical records are not being rewritten. Both are open
+decisions in the rollout checklist below.</div>
+
+<h2 id="rd-field">The Funnel? field</h2>
+<p><code>Funnel?</code> (text) now exists on <code>01. New Activity</code> in every connected Close org:</p>
+<div class="tbl"><table>
+  <tr><th>Brand org</th><th>Status</th></tr>
+  <tr><td><b>Subto</b></td><td>Already existed (shared field)</td></tr>
+  <tr><td><b>Gator Method</b></td><td>Added 2026-10-08</td></tr>
+  <tr><td><b>Top Tier TC</b></td><td>Added 2026-10-08</td></tr>
+  <tr><td><b>Zero Down Business</b></td><td>Added 2026-10-08</td></tr>
+  <tr><td><b>Deal Scout</b></td><td>Added 2026-10-08</td></tr>
+</table></div>
+<p class="dim">Don't confuse it with the separate <code>Funnel</code> dropdown that Gator and TC also have on
+<code>01. New Activity</code>, or with the older <code>Funnel?</code> dropdown TC has on a different activity
+type. The standard field is the text <code>Funnel?</code> on <code>01. New Activity</code>.</p>
+<p class="dim">Field IDs for each brand's Close org are kept in the internal version of this page.</p>
+
+<h2 id="rd-rollout">Rollout checklist</h2>
+<div class="tbl"><table>
+  <tr><th>Step</th><th>Status</th></tr>
+  <tr><td>Add <code>Funnel?</code> to <code>01. New Activity</code> in every brand org</td><td><span class="pill cur">done 2026-10-08</span></td></tr>
+  <tr><td>Update each webinar replay zap / n8n workflow to write <code>Webinar Replay - MM/DD/YYYY</code> into <code>Funnel?</code></td><td><span class="todo">to do</span></td></tr>
+  <tr><td>Test with one real registrant per brand and confirm the exact value in Close</td><td><span class="todo">to do</span></td></tr>
+  <tr><td>Verify after the first live replay: group activities by <code>Funnel?</code> and check the count matches registrations</td><td><span class="todo">to do</span></td></tr>
+  <tr><td>Point smart views and reports at <code>Funnel?</code> starting with <code>Webinar Replay - </code></td><td><span class="todo">to do</span></td></tr>
+  <tr><td>Decide: stop writing the old like-live <code>Funnel</code> / <code>Notes</code> values once Goal and reports read <code>Funnel?</code></td><td><span class="todo">decision</span></td></tr>
+  <tr><td>Decide: backfill historical like-live records, or leave them as Historical Setup</td><td><span class="todo">decision</span></td></tr>
+</table></div>
+
+<h2 id="rd-next">Coming next</h2>
+<p>Standards for the other webinar types will be added here as they're agreed:</p>
+<div class="brands">
+  <div class="brand"><h4>Live / True live</h4><p class="dim">To be defined.</p></div>
+  <div class="brand"><h4>AMA / Fireside Chat</h4><p class="dim">To be defined.</p></div>
+</div>
+</section>
+
+<section id="historical" class="view" hidden>
+<h2 class="view-title">Historical Setup</h2>
+<p class="lede">What each brand wrote into the funnel and notes fields for <b>like-lives, true lives,
+lives and AMAs / Fireside Chats</b> before standardization: the text, how the date was written, and
+where the brands disagree.</p>
+<p class="stamp">Live Close data · pulled 2026-10-08 · all-time counts</p>
 
 <div class="callout">
   <b>Use this page</b> when you build or edit anything that writes a webinar
@@ -401,6 +546,8 @@ only</b>. It has no like-live or AMA patterns. Measured against the data above:<
   <li>Should the n8n lanes match today's Zapier output byte for byte (zero-padded Subto day, Gator/TC funnel field IDs) before the Wave 1 shadow comparison? A shadow run will report them as mismatches otherwise.</li>
 </ul>
 
+</section>
+
 <p class="stamp" style="margin-top:48px">Public copy: internal field IDs and system references removed.</p>
 </main>
 
@@ -429,6 +576,39 @@ only</b>. It has no like-live or AMA patterns. Measured against the data above:<
       });
     }
     wire('qf-brand','b');wire('qf-type','t');
+
+    var tabs=document.querySelectorAll('.tab');
+    function showView(v){
+      document.querySelectorAll('.view').forEach(function(s){s.hidden=s.id!==v});
+      document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('on',b.dataset.view===v)});
+    }
+    function closeMenus(){tabs.forEach(function(t){t.classList.remove('open')})}
+    function goTo(id){
+      var el=id&&document.getElementById(id);
+      var view=el?(el.classList.contains('view')?el:el.closest('.view')):null;
+      showView(view?view.id:'redesign');
+      if(el&&el.tagName==='DETAILS')el.open=true;
+      if(el&&!el.classList.contains('view'))el.scrollIntoView();else window.scrollTo(0,0);
+    }
+    document.querySelectorAll('.tab-btn').forEach(function(b){
+      b.addEventListener('click',function(e){
+        e.stopPropagation();
+        var tab=b.closest('.tab'),wasOpen=tab.classList.contains('open');
+        closeMenus();
+        if(!b.classList.contains('on')){showView(b.dataset.view);window.scrollTo(0,0);
+          history.replaceState(null,'','#'+b.dataset.view);}
+        if(!wasOpen)tab.classList.add('open');
+      });
+    });
+    document.addEventListener('click',function(e){if(!e.target.closest('.menu'))closeMenus()});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeMenus()});
+    document.addEventListener('click',function(e){
+      var a=e.target.closest('a[href^="#"]');if(!a)return;
+      e.preventDefault();closeMenus();
+      var id=a.getAttribute('href').slice(1);history.pushState(null,'','#'+id);goTo(id);
+    });
+    window.addEventListener('popstate',function(){goTo(location.hash.slice(1))});
+    goTo(location.hash.slice(1));
 
     var toast=document.getElementById('toast'),tm;
     document.addEventListener('click',function(e){
