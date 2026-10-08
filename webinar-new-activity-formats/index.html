@@ -144,12 +144,13 @@
     <div class="menu">
       <a href="#redesign">Overview</a>
       <a href="#rd-why">Why we're standardizing</a>
-      <a href="#rd-standards">The three standards</a>
+      <a href="#rd-standards">The four standards</a>
       <a href="#rd-dates">Dates (MM/DD/YYYY)</a>
+      <a href="#rd-multiday">Multi-day events</a>
       <a href="#rd-replaces">What it replaces</a>
       <a href="#rd-field">The Funnel? field</a>
       <a href="#rd-rollout">Rollout checklist</a>
-      <a href="#rd-next">Not covered yet</a>
+      <a href="#rd-next">Out of scope / TBD</a>
     </div>
   </div>
   <span class="spacer"></span>
@@ -187,21 +188,22 @@ records lost their date entirely. That turns every cross-brand report into manua
 <div class="callout">The goal is better business performance: knowing which webinars actually produce
 leads and sales lets us invest in the ones that work and fix or retire the ones that don't.</div>
 
-<h2 id="rd-standards">The three standards</h2>
+<h2 id="rd-standards">The four standards</h2>
 <p>Every webinar registration writes exactly one of these into <code>Funnel?</code> on
 <code>01. New Activity</code>, in every brand:</p>
 <div class="tbl"><table>
   <tr><th>Webinar type</th><th>Write into <code>Funnel?</code></th><th>Example</th><th>Replaces</th></tr>
   <tr id="rd-replay"><td><b>Webinar Replay</b></td><td><code class="copy">Webinar Replay - MM/DD/YYYY</code></td><td><code class="copy">Webinar Replay - 10/08/2026</code></td><td>Every “Like Live” variation — the pre-recorded WebinarJam / EverWebinar runs</td></tr>
-  <tr id="rd-ama"><td><b>AMA</b></td><td><code class="copy">AMA - MM/DD/YYYY</code></td><td><code class="copy">AMA - 10/07/2026</code></td><td>Every AMA and Fireside Chat variation</td></tr>
+  <tr id="rd-ama"><td><b>AMA</b></td><td><code class="copy">AMA - MM/DD/YYYY</code></td><td><code class="copy">AMA - 10/07/2026</code></td><td>Every AMA variation</td></tr>
+  <tr id="rd-fireside"><td><b>Fireside Chat</b></td><td><code class="copy">Fireside Chat - MM/DD/YYYY</code></td><td><code class="copy">Fireside Chat - 04/15/2026</code></td><td>Every Fireside Chat variation</td></tr>
   <tr id="rd-live"><td><b>Live Webinar</b></td><td><code class="copy">Live Webinar - MM/DD/YYYY</code></td><td><code class="copy">Live Webinar - 08/13/2026</code></td><td>Every live Zoom webinar, including Gator's “True Live”</td></tr>
 </table></div>
 <div class="std">
   <dl>
     <dt>Activity</dt><dd><code>01. New Activity</code></dd>
     <dt>Field</dt><dd><code>Funnel?</code> (text) — now present in every brand org</dd>
-    <dt>Label</dt><dd>Exactly <code>Webinar Replay</code>, <code>AMA</code> or <code>Live Webinar</code>, then space, hyphen, space (<code> - </code>), then the date</dd>
-    <dt>Date</dt><dd>The webinar's scheduled date — not the registration date — in America/Phoenix time</dd>
+    <dt>Label</dt><dd>Exactly <code>Webinar Replay</code>, <code>AMA</code>, <code>Fireside Chat</code> or <code>Live Webinar</code>, then space, hyphen, space (<code> - </code>), then the date</dd>
+    <dt>Date</dt><dd>The webinar's scheduled date — not the registration date — in America/Phoenix time. For a multi-day event, use the <b>last day</b> of the event.</dd>
   </dl>
 </div>
 
@@ -213,8 +215,16 @@ leads and sales lets us invest in the ones that work and fix or retire the ones 
   <tr><td>March 5, 2026</td><td><code>03/05/2026</code></td><td><code class="copy">Webinar Replay - 03/05/2026</code></td></tr>
   <tr><td>October 1, 2026</td><td><code>10/01/2026</code></td><td><code class="copy">AMA - 10/01/2026</code></td></tr>
   <tr><td>January 12, 2027</td><td><code>01/12/2027</code></td><td><code class="copy">Live Webinar - 01/12/2027</code></td></tr>
-  <tr><td>December 9, 2026</td><td><code>12/09/2026</code></td><td><code class="copy">Live Webinar - 12/09/2026</code></td></tr>
+  <tr><td>December 9, 2026</td><td><code>12/09/2026</code></td><td><code class="copy">Fireside Chat - 12/09/2026</code></td></tr>
   <tr><td>November 24, 2026</td><td><code>11/24/2026</code></td><td><code class="copy">Webinar Replay - 11/24/2026</code> <span class="dim">— already two digits, no change</span></td></tr>
+</table></div>
+
+<h3 id="rd-multiday">Multi-day events: use the last day</h3>
+<p>When an event runs over several days, the date is the <b>last day</b> of the event.</p>
+<div class="tbl"><table>
+  <tr><th>Event runs</th><th>Date to use</th><th>Full value</th></tr>
+  <tr><td>October 6–8, 2026</td><td><code>10/08/2026</code></td><td><code class="copy">Live Webinar - 10/08/2026</code></td></tr>
+  <tr><td>March 30 – April 2, 2026</td><td><code>04/02/2026</code></td><td><code class="copy">Live Webinar - 04/02/2026</code></td></tr>
 </table></div>
 
 <h3>Format rules</h3>
@@ -225,7 +235,8 @@ leads and sales lets us invest in the ones that work and fix or retire the ones 
   <tr><td class="no-mark">✗</td><td><code>AMA - 03/05/26</code></td><td>Year must be four digits</td></tr>
   <tr><td class="no-mark">✗</td><td><code>AMA - March 05 2026</code></td><td>Numeric date only</td></tr>
   <tr><td class="no-mark">✗</td><td><code>AMA 03/05/2026</code></td><td>Missing <code> - </code> (space, hyphen, space)</td></tr>
-  <tr><td class="no-mark">✗</td><td><code>Like Live 03/05/2026</code> · <code>Fireside Chat - 03/05/2026</code> · <code>True Live - 03/05/2026</code></td><td>Old labels — use <code>Webinar Replay</code>, <code>AMA</code>, <code>Live Webinar</code></td></tr>
+  <tr><td class="no-mark">✗</td><td><code>Like Live 03/05/2026</code> · <code>True Live - 03/05/2026</code></td><td>Old labels — use <code>Webinar Replay</code> or <code>Live Webinar</code></td></tr>
+  <tr><td class="no-mark">✗</td><td><code>AMA - Fireside Chat - 03/05/2026</code> · <code>Fireside Chat AMA - 03/05/2026</code></td><td>AMA and Fireside Chat are separate events — use one label</td></tr>
   <tr><td class="no-mark">✗</td><td><code>live webinar - 03/05/2026</code></td><td>Capitalization must match exactly</td></tr>
   <tr><td class="no-mark">✗</td><td><code>Subto AMA - 03/05/2026</code> · <code>AMA - 03/05/2026 Registrant</code></td><td>Nothing before the label or after the date — the Close org already identifies the brand</td></tr>
   <tr><td class="no-mark">✗</td><td><code>Live Webinar -</code></td><td>Never write the label without the date</td></tr>
@@ -237,17 +248,21 @@ leads and sales lets us invest in the ones that work and fix or retire the ones 
   <tr><th>Brand</th><th>Type</th><th>Historical record</th><th>New <code>Funnel?</code> value</th></tr>
   <tr><td><b>Subto</b></td><td>Replay</td><td><code>Funnel?</code> <code>Like Live</code> + Notes <code>Like Live Registration 09/30/2026</code></td><td><code>Webinar Replay - 09/30/2026</code></td></tr>
   <tr><td><b>Subto</b></td><td>AMA</td><td>Funnel? empty + Notes <code>AMA - October 07 2026</code></td><td><code>AMA - 10/07/2026</code></td></tr>
+  <tr><td><b>Subto</b></td><td>Fireside Chat</td><td>Funnel? empty + Notes <code>Fireside Chat⏎Date of webinar - April 02 2026</code></td><td><code>Fireside Chat - 04/02/2026</code></td></tr>
   <tr><td><b>Subto</b></td><td>Live</td><td><code>Funnel?</code> and Notes <code>Live Webinar - August 13, 2026</code></td><td><code>Live Webinar - 08/13/2026</code></td></tr>
   <tr><td><b>Gator</b></td><td>Replay</td><td><code>Funnel</code> <code>Gator Webinar</code> + Notes <code>Like Live 08/28/2026</code></td><td><code>Webinar Replay - 08/28/2026</code></td></tr>
   <tr><td><b>Gator</b></td><td>AMA</td><td>Funnel empty + Notes <code>AMA - Date of webinar - October 06 2026</code></td><td><code>AMA - 10/06/2026</code></td></tr>
+  <tr><td><b>Gator</b></td><td>Fireside Chat</td><td>Funnel empty + Notes <code>Fireside Chat⏎Date of webinar - April 13 2026</code></td><td><code>Fireside Chat - 04/13/2026</code></td></tr>
   <tr><td><b>Gator</b></td><td>Live (True Live)</td><td><code>Funnel</code> <code>Gator Webinar</code> + Notes <code>Date of webinar - 09/03/2026</code></td><td><code>Live Webinar - 09/03/2026</code></td></tr>
   <tr><td><b>Top Tier TC</b></td><td>Replay</td><td><code>Funnel</code> <code>Webinar Funnel</code> + <code>Notes.</code> <code>Like Live 09/25/2026</code></td><td><code>Webinar Replay - 09/25/2026</code></td></tr>
   <tr><td><b>Top Tier TC</b></td><td>AMA</td><td>Funnel empty + <code>Notes.</code> <code>AMA 09/23</code></td><td><code>AMA - 09/23/2026</code></td></tr>
+  <tr><td><b>Top Tier TC</b></td><td>Fireside Chat</td><td>Funnel empty + <code>Notes.</code> <code>Fireside Chat 05/12</code></td><td><code>Fireside Chat - 05/12/2026</code></td></tr>
   <tr><td><b>Top Tier TC</b></td><td>Live</td><td class="dim">No live pattern in the historical data</td><td><code>Live Webinar - MM/DD/YYYY</code></td></tr>
   <tr><td><b>ZDB</b></td><td>Replay</td><td><code>Funnel</code> <code>ZDB Webinar</code> + Notes <code>Like Live 09/23/2026</code></td><td><code>Webinar Replay - 09/23/2026</code></td></tr>
   <tr><td><b>ZDB</b></td><td>AMA</td><td>Funnel empty + Notes <code>October 08 2026 ZDB AMA Registrant</code></td><td><code>AMA - 10/08/2026</code></td></tr>
+  <tr><td><b>ZDB</b></td><td>Fireside Chat</td><td>Funnel empty + Notes <code>Fireside Chat 04/15</code></td><td><code>Fireside Chat - 04/15/2026</code></td></tr>
   <tr><td><b>ZDB</b></td><td>Live</td><td><code>Funnel</code> <code>Business Acquisition Training</code> + Notes <code>10/06 ZDB Registrant</code></td><td><code>Live Webinar - 10/06/2026</code></td></tr>
-  <tr><td><b>Deal Scout</b></td><td>All</td><td class="dim">Not part of the historical review</td><td>Same three standards</td></tr>
+  <tr><td><b>Deal Scout</b></td><td>All</td><td class="dim">Not part of the historical review</td><td>Same four standards</td></tr>
 </table></div>
 <div class="callout warn"><b>Until decided otherwise, keep writing the existing fields.</b> Gator's Goal
 looks people up by the existing <code>Funnel</code> + <code>Notes</code> pair, so <code>Funnel?</code> is added
@@ -277,24 +292,22 @@ type. The standard field is the text <code>Funnel?</code> on <code>01. New Activ
 <div class="tbl"><table>
   <tr><th>Step</th><th>Status</th></tr>
   <tr><td>Add <code>Funnel?</code> to <code>01. New Activity</code> in every brand org</td><td><span class="pill cur">done 2026-10-08</span></td></tr>
-  <tr><td>Update each webinar replay, AMA and live webinar zap / n8n workflow to write its standard value into <code>Funnel?</code></td><td><span class="todo">to do</span></td></tr>
+  <tr><td>Update each webinar replay, AMA, Fireside Chat and live webinar zap / n8n workflow to write its standard value into <code>Funnel?</code></td><td><span class="todo">to do</span></td></tr>
   <tr><td>Check Subto smart views and reports that filter <code>Funnel?</code> on the old values before Subto switches</td><td><span class="todo">to do</span></td></tr>
   <tr><td>Test with one real registrant per brand per type and confirm the exact value in Close</td><td><span class="todo">to do</span></td></tr>
   <tr><td>Verify after each first live run: group activities by <code>Funnel?</code> and check the count matches registrations</td><td><span class="todo">to do</span></td></tr>
-  <tr><td>Point smart views and reports at <code>Funnel?</code> starting with <code>Webinar Replay - </code>, <code>AMA - </code> or <code>Live Webinar - </code></td><td><span class="todo">to do</span></td></tr>
+  <tr><td>Point smart views and reports at <code>Funnel?</code> starting with <code>Webinar Replay - </code>, <code>AMA - </code>, <code>Fireside Chat - </code> or <code>Live Webinar - </code></td><td><span class="todo">to do</span></td></tr>
   <tr><td>Decide: stop writing the old <code>Funnel</code> / <code>Notes</code> values once Goal and reports read <code>Funnel?</code></td><td><span class="todo">decision</span></td></tr>
   <tr><td>Decide: backfill historical records, or leave them as Historical Setup</td><td><span class="todo">decision</span></td></tr>
 </table></div>
 
-<h2 id="rd-next">Not covered yet</h2>
-<p>These appear in the historical data but don't have a standard yet. Until they do, keep writing them
-as they are today:</p>
+<h2 id="rd-next">Out of scope and still to decide</h2>
 <div class="brands">
-  <div class="brand"><h4>Encore webinars</h4><p class="dim">e.g. Subto <code>ST | NOLB ENCORE Webinar</code>. A re-run of a live — Live Webinar or Webinar Replay?</p></div>
-  <div class="brand"><h4>Multi-day events</h4><p class="dim">Challenges and multi-day lives (Gator's April 2025 Pace live). Which day's date goes in the value?</p></div>
-  <div class="brand"><h4>Attendance outcomes</h4><p class="dim">Attendee, Non Attendee, Left Early, Saw CTA records. Same label, or a separate one?</p></div>
-  <div class="brand"><h4>Podcast events</h4><p class="dim">e.g. TC <code>Your First TC Deal Podcast 9/18</code>.</p></div>
+  <div class="brand"><h4>Attendance outcomes <span class="pill">no change</span></h4><p class="dim">Attendee, Non Attendee, Left Early and Saw CTA records are mostly updated by hand in Close after the webinar. They stay as they are and are not part of this standard.</p></div>
+  <div class="brand"><h4>Podcasts and other non-standard video events <span class="todo">TBD</span></h4><p class="dim">e.g. TC <code>Your First TC Deal Podcast 9/18</code>. To be defined with the sales and community teams.</p></div>
+  <div class="brand"><h4>Encore webinars <span class="todo">TBD</span></h4><p class="dim">e.g. Subto <code>ST | NOLB ENCORE Webinar</code>. A re-run of a live — Live Webinar or Webinar Replay?</p></div>
 </div>
+<p class="dim">Until a TBD item has a standard, keep writing it as it is today.</p>
 </section>
 
 <section id="historical" class="view" hidden>
@@ -344,7 +357,7 @@ brand formats it differently.</p>
   <div class="brand"><h4>Like-live</h4><p class="dim">A pre-recorded WebinarJam / EverWebinar run presented as live.</p></div>
   <div class="brand"><h4>True live</h4><p class="dim">Gator's term for its live Saturday Zoom webinar (“NEW NRE SAT – TRUE LIVE”).</p></div>
   <div class="brand"><h4>Live</h4><p class="dim">A live Zoom webinar under the brand's main funnel (Subto “Live Webinar”, ZDB “Business Acquisition Training”). Gator's true live is its version of this.</p></div>
-  <div class="brand"><h4>AMA / Fireside Chat</h4><p class="dim">The DOE Fireside Chat (AMA) series. “Fireside Chat” is the older name; each brand switched to “AMA” between May and June 2026.</p></div>
+  <div class="brand"><h4>AMA / Fireside Chat</h4><p class="dim">The DOE Fireside Chat / AMA series. Both labels appear in the data; “Fireside Chat” values run through spring 2026 and “AMA” values begin May–June 2026. They are treated as separate event types going forward.</p></div>
 </div>
 
 <h2 id="quick">Quick reference — the current pattern</h2>
