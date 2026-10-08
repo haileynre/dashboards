@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Webinar "01. New Activity" field formats — SOP</title>
+<script>
+  (function(){var t;try{t=localStorage.getItem('nre-theme')}catch(e){}
+    document.documentElement.setAttribute('data-theme',t||'light');})();
+  function nreToggleTheme(){
+    var r=document.documentElement,t=r.getAttribute('data-theme')==='light'?'dark':'light';
+    r.setAttribute('data-theme',t);try{localStorage.setItem('nre-theme',t)}catch(e){}
+    nreThemeLabel();
+  }
+  function nreThemeLabel(){
+    var b=document.getElementById('theme-btn');if(!b)return;
+    var light=document.documentElement.getAttribute('data-theme')==='light';
+    b.textContent=light?'☾ Dark mode':'☀ Light mode';
+    b.setAttribute('aria-label',light?'Switch to dark mode':'Switch to light mode');
+  }
+  document.addEventListener('DOMContentLoaded',nreThemeLabel);
+</script>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2333; --line:#30363d;
+    --ink:#e6edf3; --dim:#8b949e; --accent:#58a6ff; --accent-dim:rgba(88,166,255,.12);
+    --ok:#56b4e9; --warn:#e69f00; --err:#ff8a5c;
+    --font:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono:ui-monospace, "SF Mono", Menlo, monospace;
+    --radius:10px;
+  }
+  :root[data-theme="light"]{
+    --bg:#ffffff; --panel:#f6f8fa; --panel2:#eef1f5; --line:#c9d1d9;
+    --ink:#1f2328; --dim:#57606a; --accent:#0550ae; --accent-dim:rgba(5,80,174,.10);
+    --ok:#0072b2; --warn:#9a5b00; --err:#b83d00;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:70px}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.6 var(--font)}
+  .topbar{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
+  .topbar .in{max-width:1180px;margin:0 auto;padding:10px 22px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .topbar a{font-size:13px;color:var(--dim);text-decoration:none;padding:4px 9px;border-radius:6px}
+  .topbar a:hover{background:var(--panel2);color:var(--ink)}
+  .topbar .spacer{flex:1}
+  button{font:inherit;cursor:pointer}
+  #theme-btn{font-size:12.5px;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:4px 10px}
+  .wrap{max-width:1180px;margin:0 auto;padding:36px 22px 110px}
+  h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin:0 0 10px}
+  .lede{font-size:17px;color:var(--dim);max-width:46em;margin:0 0 10px}
+  .stamp{font:12px/1.4 var(--mono);color:var(--dim)}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);
+     margin:52px 0 14px;font-weight:700}
+  h3{font-size:18px;margin:26px 0 8px}
+  h4{font-size:14.5px;margin:20px 0 6px}
+  p{margin:8px 0}
+  .dim{color:var(--dim)}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel2);
+    border:1px solid var(--line);border-radius:5px;padding:1px 6px;white-space:pre-wrap;word-break:break-word}
+  code.copy{cursor:copy}
+  code.copy:hover{border-color:var(--accent)}
+  .callout{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:var(--radius);padding:12px 16px;margin:16px 0}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout.err{border-left-color:var(--err)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:22px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+  .stat b{display:block;font-size:24px;letter-spacing:-.03em}
+  .stat span{display:block;font-size:12.5px;color:var(--dim);margin-top:4px}
+  .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700}
+  tr:last-child td{border-bottom:0}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ids td code{font-size:11.5px}
+  .pill{display:inline-block;font:700 11px/1.2 var(--mono);padding:3px 8px;border-radius:99px;
+    border:1px solid var(--line);background:var(--panel2);white-space:nowrap}
+  .pill.cur{color:var(--ok);border-color:var(--ok)}
+  .pill.bad{color:var(--err);border-color:var(--err)}
+  .empty{color:var(--dim);font-style:italic}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+  .filters span{font-size:12.5px;color:var(--dim);align-self:center;margin-right:4px}
+  .filters button{font-size:13px;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:99px;padding:4px 12px}
+  .filters button.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:600}
+  .brands{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin:14px 0}
+  .brand{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+  .brand h4{margin:0 0 6px}
+  .brand p{margin:3px 0;font-size:13.5px}
+  ol li,ul li{margin:6px 0}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:4px 16px;margin:12px 0}
+  details[open]{padding-bottom:12px}
+  summary{cursor:pointer;font-weight:700;font-size:16px;padding:10px 0}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+    font-size:13px;padding:7px 14px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+  #toast.show{opacity:1}
+  @media print{.topbar,.filters,#toast{display:none}details{border:0}details>*{display:block}}
+</style>
+</head>
+<body>
+
+<nav class="topbar"><div class="in">
+  <a href="#why">Why it matters</a>
+  <a href="#fields">Fields</a>
+  <a href="#types">Webinar types</a>
+  <a href="#quick">Quick reference</a>
+  <a href="#detail">Per brand</a>
+  <a href="#dates">Date formats</a>
+  <a href="#defects">Defects</a>
+  <a href="#sop">SOP</a>
+  <a href="#n8n">n8n gaps</a>
+  <a href="#repull">Re-pull</a>
+  <span class="spacer"></span>
+  <button id="theme-btn" onclick="nreToggleTheme()">☾ Dark mode</button>
+</div></nav>
+
+<main class="wrap">
+
+<header>
+  <h1>Webinar “01. New Activity” field formats</h1>
+  <p class="lede">What each brand writes into the funnel and notes fields of the Close
+  <code>01. New Activity</code> custom activity for <b>like-lives, true lives, lives and
+  AMAs / Fireside Chats</b>: the text, how the date is written, and where the brands disagree.</p>
+  <p class="stamp">Live Close data · pulled 2026-10-08 · all-time counts · click any pattern to copy it</p>
+</header>
+
+<div class="callout">
+  <b>Use this page</b> when you build or edit anything that writes a webinar
+  <code>01. New Activity</code> (Zapier or n8n), or anything that searches or reports on one.
+  <br><span class="dim">Source: every custom activity in each brand's Close org, grouped by its
+  funnel and notes values. It shows what the zaps <i>actually wrote</i>, mistakes included —
+  not the Zapier step settings.</span>
+</div>
+
+<div class="stats">
+  <div class="stat"><b>7</b><span>different date formats in use</span></div>
+  <div class="stat"><b>0 of 4</b><span>brands fill the funnel field on AMAs</span></div>
+  <div class="stat"><b>38,292</b><span>Gator records with the date blank</span></div>
+  <div class="stat"><b>6</b><span>formats ZDB's live notes have gone through</span></div>
+</div>
+
+<h2 id="why">Why this matters</h2>
+<p><code>01. New Activity</code> is a live edge: 38 zaps write it and one thing listens. There is
+no shared “webinar date” field, so <b>the date of the event lives inside free text</b>, and every
+brand formats it differently.</p>
+<p>Gator's Goal looks people up by the Funnel + Notes pair (Gator team, 2026-09-02), so the text format
+<i>is</i> the contract. A “cleaned-up” string silently breaks lookups.</p>
+
+<h2 id="fields">The fields, per brand</h2>
+<p>Only Subto's field is literally named <code>Funnel?</code>. The other brands use
+<code>Funnel</code>, and Top Tier's notes field is <code>Notes.</code> (with a period).</p>
+<div class="tbl"><table>
+  <tr><th>Brand</th><th>Funnel field</th><th>Notes field</th><th>Date fields on the activity</th></tr>
+  <tr><td><b>Subto</b></td><td><code>Funnel?</code> — free text</td><td><code>Notes</code> — text</td><td><code>Activity Date</code> (date)</td></tr>
+  <tr><td><b>Gator</b></td><td><code>Funnel</code> — choices</td><td><code>Notes</code> — text</td><td><code>Activity Date</code> (date)</td></tr>
+  <tr><td><b>Top Tier TC</b></td><td><code>Funnel</code> — choices</td><td><code>Notes.</code> — text</td><td><code>Activity Date</code> (date), <code>TTTC Webinar Date</code> (text)</td></tr>
+  <tr><td><b>ZDB</b></td><td><code>Funnel</code> — free text</td><td><code>Notes</code> — rich text</td><td><code>Activity Date</code> (date) — never filled for webinars</td></tr>
+</table></div>
+
+<p class="dim">Field IDs for each brand's Close org are kept in the internal version of this page.</p>
+
+<h2 id="types">The webinar types</h2>
+<div class="brands">
+  <div class="brand"><h4>Like-live</h4><p class="dim">A pre-recorded WebinarJam / EverWebinar run presented as live.</p></div>
+  <div class="brand"><h4>True live</h4><p class="dim">Gator's term for its live Saturday Zoom webinar (“NEW NRE SAT – TRUE LIVE”).</p></div>
+  <div class="brand"><h4>Live</h4><p class="dim">A live Zoom webinar under the brand's main funnel (Subto “Live Webinar”, ZDB “Business Acquisition Training”). Gator's true live is its version of this.</p></div>
+  <div class="brand"><h4>AMA / Fireside Chat</h4><p class="dim">The DOE Fireside Chat (AMA) series. “Fireside Chat” is the older name; each brand switched to “AMA” between May and June 2026.</p></div>
+</div>
+
+<h2 id="quick">Quick reference — the current pattern</h2>
+<p>What a correctly formed activity written today looks like. <code>{…}</code> marks the date token.</p>
+<div class="filters" id="qf-brand"><span>Brand</span>
+  <button class="on" data-v="all">All</button><button data-v="Subto">Subto</button><button data-v="Gator">Gator</button><button data-v="TC">TC</button><button data-v="ZDB">ZDB</button>
+</div>
+<div class="filters" id="qf-type"><span>Type</span>
+  <button class="on" data-v="all">All</button><button data-v="Live">Live / True live</button><button data-v="Like-live">Like-live</button><button data-v="AMA">AMA</button>
+</div>
+<div class="tbl"><table id="quick-table">
+  <tr><th>Brand</th><th>Type</th><th>Funnel</th><th>Notes</th><th>Example Notes</th></tr>
+  <tr data-b="Subto" data-t="Live"><td><b>Subto</b></td><td>Live</td><td><code class="copy">Live Webinar - {Month DD, YYYY}</code></td><td class="dim">same as Funnel</td><td><code class="copy">Live Webinar - August 13, 2026</code></td></tr>
+  <tr data-b="Subto" data-t="Like-live"><td><b>Subto</b></td><td>Like-live</td><td><code class="copy">Like Live</code></td><td><code class="copy">Like Live Registration {MM/DD/YYYY}</code></td><td><code class="copy">Like Live Registration 09/30/2026</code></td></tr>
+  <tr data-b="Subto" data-t="AMA"><td><b>Subto</b></td><td>AMA</td><td class="empty">(empty)</td><td><code class="copy">AMA - {Month DD YYYY}</code></td><td><code class="copy">AMA - October 07 2026</code></td></tr>
+  <tr data-b="Gator" data-t="Live"><td><b>Gator</b></td><td>True live</td><td><code class="copy">Gator Webinar</code></td><td><code class="copy">Date of webinar - {MM/DD/YYYY}</code></td><td><code class="copy">Date of webinar - 09/03/2026</code></td></tr>
+  <tr data-b="Gator" data-t="Like-live"><td><b>Gator</b></td><td>Like-live</td><td><code class="copy">Gator Webinar</code></td><td><code class="copy">Like Live {MM/DD/YYYY}</code></td><td><code class="copy">Like Live 08/28/2026</code></td></tr>
+  <tr data-b="Gator" data-t="AMA"><td><b>Gator</b></td><td>AMA</td><td class="empty">(empty)</td><td><code class="copy">AMA - Date of webinar - {Month DD YYYY}</code></td><td><code class="copy">AMA - Date of webinar - October 06 2026</code></td></tr>
+  <tr data-b="TC" data-t="Like-live"><td><b>TC</b></td><td>Like-live</td><td><code class="copy">Webinar Funnel</code></td><td><code class="copy">Like Live {MM/DD/YYYY}</code></td><td><code class="copy">Like Live 09/25/2026</code></td></tr>
+  <tr data-b="TC" data-t="AMA"><td><b>TC</b></td><td>AMA</td><td class="empty">(empty)</td><td><code class="copy">AMA {MM/DD}</code></td><td><code class="copy">AMA 09/23</code></td></tr>
+  <tr data-b="ZDB" data-t="Live"><td><b>ZDB</b></td><td>Live</td><td><code class="copy">Business Acquisition Training</code></td><td><code class="copy">{MM/DD} ZDB Registrant</code></td><td><code class="copy">10/06 ZDB Registrant</code></td></tr>
+  <tr data-b="ZDB" data-t="Like-live"><td><b>ZDB</b></td><td>Like-live</td><td><code class="copy">ZDB Webinar</code></td><td><code class="copy">Like Live {MM/DD/YYYY}</code></td><td><code class="copy">Like Live 09/23/2026</code></td></tr>
+  <tr data-b="ZDB" data-t="AMA"><td><b>ZDB</b></td><td>AMA</td><td class="empty">(empty)</td><td><code class="copy">{Month DD YYYY} ZDB AMA Registrant</code></td><td><code class="copy">October 08 2026 ZDB AMA Registrant</code></td></tr>
+</table></div>
+<p id="quick-none" class="dim" style="display:none">No current pattern for that combination. TC has no live pattern; see the TC section.</p>
+
+<div class="callout">
+<b>How to read it</b>
+<ul>
+  <li><b>Like-live is the most consistent type.</b> Gator, TC and ZDB all write <code>Like Live {MM/DD/YYYY}</code>. Subto alone adds the word “Registration”.</li>
+  <li><b>AMAs never set the funnel field</b> in any brand. The type and date live only in the notes field, so a filter on the funnel field will miss every AMA.</li>
+  <li><b>The funnel field doesn't tell types apart in Gator or TC.</b> Gator true lives and like-lives both use <code>Gator Webinar</code>; TC like-lives use the generic <code>Webinar Funnel</code>. Only the notes field separates them.</li>
+  <li><b>No TC “live” pattern exists.</b> TC's webinar activities are like-lives and AMAs; the only other TC webinar note is <code>Webinar Hot App</code> (17 records).</li>
+</ul>
+</div>
+
+<h2 id="detail">Per-brand detail and historical variations</h2>
+<p class="dim">Click a brand to expand it. <span class="pill cur">current</span> marks today's format.</p>
+
+<details id="d-subto">
+<summary>Subto</summary>
+<p>Lead Type is <code>Webinar</code> for lives, like-lives and attendance records (<code>NOLB Webinar</code> for the NOLB funnel). <code>Activity Date</code> is filled on essentially every record, with one exception under Defects. All webinar values were confirmed to sit on <code>01. New Activity</code>.</p>
+
+<h4>Live</h4>
+<p>Funnel? and Notes are identical: <code>Live Webinar - {Month DD, YYYY}</code>, with a zero-padded day and a comma (<code>Live Webinar - June 02, 2026</code>). Largest run: August 13 2026, 14,157 records. Topic webinars used their own one-off strings:</p>
+<div class="tbl"><table>
+  <tr><th>Funnel?</th><th>Notes</th></tr>
+  <tr><td><code>MHP Webinar Registrant - April 21, 2026</code></td><td class="dim">same</td></tr>
+  <tr><td><code>Rhea Campbell Webinar Registrant - May 30, 2026</code></td><td class="dim">same</td></tr>
+  <tr><td><code>Webinar Registrant - July 15, 2026</code></td><td class="dim">same</td></tr>
+  <tr><td><code>05/18/26 Creative Finance Webinar</code></td><td><code>05/18/26 Creative Finance Webinar Registrant</code></td></tr>
+  <tr><td><code>ST | NOLB LIVE WEBINAR</code></td><td><code>NOLB LIVE Registration</code> <span class="dim">— no date</span></td></tr>
+</table></div>
+
+<h4>Like-live — three generations</h4>
+<div class="tbl"><table>
+  <tr><th>Era</th><th>Funnel?</th><th>Notes</th><th>Records</th></tr>
+  <tr><td><span class="pill cur">current</span> May 2026 →</td><td><code>Like Live</code></td><td><code>Like Live Registration {MM/DD/YYYY}</code></td><td class="num">~8,270</td></tr>
+  <tr><td><span class="pill bad">date missing</span></td><td><code>Like Live</code></td><td><code>Like Live Registration</code></td><td class="num">1,038</td></tr>
+  <tr><td>Early 2026</td><td><code>Subto Like Live</code></td><td><code>Subto Like Live</code> <span class="dim">— no date</span></td><td class="num">4,547</td></tr>
+  <tr><td>April 2026</td><td><code>Subto Like Live</code></td><td><code>Subto Like Live - April 25th, 2026</code></td><td class="num">720</td></tr>
+</table></div>
+<p>Like-live <b>attendance</b> records (February 2026 only) put the date in Funnel? and the outcome in Notes:</p>
+<div class="tbl"><table>
+  <tr><th>Funnel?</th><th>Notes</th></tr>
+  <tr><td><code>Like Live Webinar Attendee - {MM/DD/YYYY}</code></td><td><code>Left Early</code> · <code>Non Attendee</code> · <code>Saw CTA</code></td></tr>
+</table></div>
+
+<h4>AMA / Fireside Chat — Funnel? empty</h4>
+<div class="tbl"><table>
+  <tr><th>Format</th><th>Example</th><th>Note</th></tr>
+  <tr><td><code>Fireside Chat</code> + newline + <code>Date of webinar - {Month DD YYYY}</code></td><td><code>Fireside Chat⏎Date of webinar - April 02 2026</code></td><td class="dim">contains a line break</td></tr>
+  <tr><td><code>AMA</code> + newline + <code>Date of webinar - {Month DD YYYY}</code></td><td><code>AMA⏎Date of webinar - May 08 2026</code></td><td class="dim">contains a line break</td></tr>
+  <tr><td><span class="pill cur">current</span> <code class="copy">AMA - {Month DD YYYY}</code></td><td><code>AMA - September 25 2026</code></td><td class="dim">no comma</td></tr>
+  <tr><td><code>{MM/DD/YYYY} AMA</code></td><td><code>09/19/2026 AMA</code></td><td class="dim">one record</td></tr>
+</table></div>
+</details>
+
+<details id="d-gator">
+<summary>Gator</summary>
+<p>Lead Type is <code>Webinar Registration</code> (<code>Webinar Attendee</code> for attendance). <code>Activity Date</code> is filled on 100% of webinar records.</p>
+
+<h4>True live — Funnel <code>Gator Webinar</code>, Notes <code>Date of webinar - {date}</code></h4>
+<div class="tbl"><table>
+  <tr><th>Era</th><th>Date format</th><th>Example</th></tr>
+  <tr><td>March 2025 → April 2026</td><td><code>Month DD YYYY</code> (no comma)</td><td><code>Date of webinar - March 21 2026</code></td></tr>
+  <tr><td><span class="pill cur">current</span> May 2026 →</td><td><code>MM/DD/YYYY</code></td><td><code>Date of webinar - 09/03/2026</code></td></tr>
+  <tr><td><span class="pill bad">broken</span></td><td>date token blank</td><td><code>Date of webinar -</code> — <b>38,292 records</b></td></tr>
+  <tr><td>One-off</td><td>suffix added</td><td><code>Date of webinar - 07/14/2026 - Hot Apps</code></td></tr>
+</table></div>
+<p class="dim">The April 2025 multi-day Pace live used Funnel <code>Pace Webinar LIVE</code> with the same <code>Date of webinar - April 09 2025</code> notes, plus <code>Gator Method with Pace Morby LIVE</code> (no date, 3,771 records).</p>
+
+<h4>Like-live — Funnel <code>Gator Webinar</code></h4>
+<div class="tbl"><table>
+  <tr><th>Format</th><th>Example</th><th>Records</th></tr>
+  <tr><td><span class="pill cur">current</span> <code class="copy">Like Live {MM/DD/YYYY}</code></td><td><code>Like Live 07/29/2026</code></td><td class="num">~2,170</td></tr>
+  <tr><td><code>Gator Like Live - {Month DDth, YYYY}</code></td><td><code>Gator Like Live - May 15th, 2026</code></td><td class="num">8</td></tr>
+  <tr><td><code>LIKE LIVE - {Month DD YYYY}</code></td><td><code>LIKE LIVE - May 14 2026</code></td><td class="num">2</td></tr>
+  <tr><td><code>Like Live</code> — no date</td><td></td><td class="num">3</td></tr>
+</table></div>
+<p class="dim">Attendance outcomes appear as bare Notes: <code>Saw CTA</code> (150, Funnel <code>Gator Webinar</code>), <code>Non Attendee</code> (2,283, Funnel empty), <code>Webinar is Closed</code> (144).</p>
+
+<h4>AMA / Fireside Chat — Funnel empty</h4>
+<div class="tbl"><table>
+  <tr><th>Format</th><th>Example</th></tr>
+  <tr><td><code>Fireside Chat</code> + newline + <code>Date of webinar - {Month DD YYYY}</code></td><td><code>Fireside Chat⏎Date of webinar - April 13 2026</code></td></tr>
+  <tr><td><code>Fireside Chat Attendee - {M/DD/YYYY}</code></td><td><code>Fireside Chat Attendee - 7/14/2026</code></td></tr>
+  <tr><td><code>Fireside Chat Non Attendee - {M/DD/YYYY}</code></td><td><code>Fireside Chat Non Attendee - 7/14/2026</code></td></tr>
+  <tr><td><span class="pill cur">current</span> <code class="copy">AMA - Date of webinar - {Month DD YYYY}</code></td><td><code>AMA - Date of webinar - September 29 2026</code></td></tr>
+</table></div>
+</details>
+
+<details id="d-tc">
+<summary>Top Tier TC</summary>
+<h4>Like-live — two generations; the date moved from one field to another</h4>
+<div class="tbl"><table>
+  <tr><th>Era</th><th>Lead Type</th><th>Funnel</th><th>Where the date is</th><th>Example</th></tr>
+  <tr><td>Dec 2024 → Apr 2026</td><td><code>Webinar</code> / <code>Webinar Attendee</code></td><td><code>"Like Live" Podcast Webinar</code></td><td><code>TTTC Webinar Date</code></td><td><code>12/14/2024</code>, or an ISO timestamp like <code>2025-09-17T21:08:26Z</code></td></tr>
+  <tr><td><span class="pill cur">current</span> May 2026 →</td><td><code>Webinar</code></td><td><code>Webinar Funnel</code></td><td><code>Notes.</code></td><td><code>Like Live 09/18/2026</code></td></tr>
+</table></div>
+<p>In the old generation, <code>TTTC Webinar Date</code> held a real event date for only ~330 records; the rest are ISO timestamps that look like the time of registration, not the webinar date. <code>Notes.</code> was empty.</p>
+<p>In the current generation, <code>Notes.</code> uses <code>MM/DD/YYYY</code>, except three early runs with a two-digit year: <code>Like Live 05/27/26</code>, <code>05/19/26</code>, <code>06/13/26</code>. 188 <code>Webinar Funnel</code> records carry Lead Type <code>Paid Hot App</code> instead of <code>Webinar</code>.</p>
+
+<h4>AMA / Fireside Chat — Funnel empty, no year</h4>
+<div class="tbl"><table>
+  <tr><th>Format</th><th>Example</th></tr>
+  <tr><td><code>Fireside Chat {M/DD}</code> or <code>{MM/DD}</code></td><td><code>Fireside Chat 3/18</code>, <code>Fireside Chat 05/12</code></td></tr>
+  <tr><td><span class="pill cur">current</span> <code class="copy">AMA {MM/DD}</code></td><td><code>AMA 09/23</code></td></tr>
+</table></div>
+<p class="dim">Related, not one of the four types: <code>Challenge_funnel</code> + <code>Your First TC Deal Podcast 9/18</code> (1,087 records).</p>
+</details>
+
+<details id="d-zdb">
+<summary>ZDB</summary>
+<p>Lead Type is <code>Webinar Registration</code>. <b><code>Activity Date</code> is never filled</b> on webinar records (0 of ~92,000); the zap never wrote it.</p>
+
+<h4>Live — Funnel <code>Business Acquisition Training</code>, six Notes formats</h4>
+<div class="tbl"><table>
+  <tr><th>Format</th><th>Example</th></tr>
+  <tr><td><code>Zero Down Registrant {MM/DD}</code></td><td><code>Zero Down Registrant 04/29</code></td></tr>
+  <tr><td><code>{M/D/YY} ZDB Webinar Registrant</code></td><td><code>6/9/26 ZDB Webinar Registrant</code></td></tr>
+  <tr><td><code>{MM/DD/YY} ZDB Webinar Registrant</code></td><td><code>06/23/26 ZDB Webinar Registrant</code></td></tr>
+  <tr><td><code>{M/D/YY} ZDB Registrant</code></td><td><code>7/20/26 ZDB Registrant</code></td></tr>
+  <tr><td><span class="pill cur">current</span> <code class="copy">{MM/DD} ZDB Registrant</code></td><td><code>10/06 ZDB Registrant</code></td></tr>
+  <tr><td><code>{MM/DD/YYYY} ZDB Registrant</code></td><td><code>09/16/2026 ZDB Registrant</code> <span class="dim">(one run)</span></td></tr>
+</table></div>
+<p class="dim"><code>ZDB Registrant</code> with no date: 42 records.</p>
+
+<h4>Like-live — Funnel <code>ZDB Webinar</code></h4>
+<div class="tbl"><table>
+  <tr><th>Format</th><th>Records</th></tr>
+  <tr><td><code>Like Live</code> — no date (first run)</td><td class="num">1,711</td></tr>
+  <tr><td><span class="pill cur">current</span> <code class="copy">Like Live {MM/DD/YYYY}</code></td><td class="num">~1,630</td></tr>
+</table></div>
+
+<h4>AMA / Fireside Chat — Funnel empty; the date position flips</h4>
+<div class="tbl"><table>
+  <tr><th>Format</th><th>Example</th></tr>
+  <tr><td><code>Fireside Chat {MM/DD}</code></td><td><code>Fireside Chat 04/15</code></td></tr>
+  <tr><td><code>Zero Down AMA Registrant {MM/DD}</code></td><td><code>Zero Down AMA Registrant 05/19</code></td></tr>
+  <tr><td><code>{MM/DD/YY} ZDB AMA Registrant</code></td><td><code>06/17/26 ZDB AMA Registrant</code></td></tr>
+  <tr><td><code>{M/D/YY} ZDB AMA Registrant</code></td><td><code>7/23/26 ZDB AMA Registrant</code></td></tr>
+  <tr><td><code>ZDB AMA Registrant {M/D/YY}</code></td><td><code>ZDB AMA Registrant 7/9/26</code></td></tr>
+  <tr><td><span class="pill cur">current</span> <code class="copy">{Month DD YYYY} ZDB AMA Registrant</code></td><td><code>October 08 2026 ZDB AMA Registrant</code></td></tr>
+</table></div>
+</details>
+
+<h2 id="dates">Every date format in use</h2>
+<div class="tbl"><table>
+  <tr><th>Format</th><th>Example</th><th>Used by</th></tr>
+  <tr><td><code>Month DD, YYYY</code> (comma, zero-padded)</td><td><code>August 13, 2026</code></td><td>Subto live</td></tr>
+  <tr><td><code>Month DD YYYY</code> (no comma)</td><td><code>September 25 2026</code></td><td>Subto AMA, Gator AMA, Gator true live (to Apr 2026), ZDB AMA</td></tr>
+  <tr><td><code>Month DDth, YYYY</code> (ordinal)</td><td><code>April 25th, 2026</code></td><td>Subto and Gator like-live, one-offs</td></tr>
+  <tr><td><code>MM/DD/YYYY</code></td><td><code>09/30/2026</code></td><td>Like-lives (all brands), Gator true live (May 2026 →)</td></tr>
+  <tr><td><code>MM/DD/YY</code> · <code>M/D/YY</code></td><td><code>06/23/26</code> · <code>7/9/26</code></td><td>ZDB live and AMA, early TC like-live</td></tr>
+  <tr><td><code>MM/DD</code> · <code>M/DD</code> (no year)</td><td><code>10/06</code> · <code>3/18</code></td><td>ZDB live, TC AMA</td></tr>
+  <tr><td>ISO timestamp</td><td><code>2025-09-17T21:08:26Z</code></td><td>TC <code>TTTC Webinar Date</code></td></tr>
+</table></div>
+
+<h2 id="defects">Known defects in existing data</h2>
+<p>These records can't be matched to an event date from Close alone:</p>
+<div class="tbl"><table>
+  <tr><th>Brand</th><th>Defect</th><th>Records</th></tr>
+  <tr><td>Gator</td><td><code>Date of webinar -</code> with the date blank</td><td class="num">38,292</td></tr>
+  <tr><td>ZDB</td><td><code>Like Live</code> with no date</td><td class="num">1,711</td></tr>
+  <tr><td>Subto</td><td><code>Like Live Registration</code> with no date</td><td class="num">1,038</td></tr>
+  <tr><td>Subto</td><td><code>Subto Like Live</code> with no date</td><td class="num">4,547</td></tr>
+  <tr><td>Subto</td><td>Template never filled: <code>Live Webinar - MMM DD, YYYY</code></td><td class="num">3</td></tr>
+  <tr><td>Subto</td><td><code>Subto Like Live</code>: <code>Activity Date</code> missing</td><td class="num">2,284 of 5,267</td></tr>
+  <tr><td>Subto</td><td>Funnel? and Notes disagree on the date: <code>05/06/26 Creative Finance Webinar</code> + <code>05/18/26 … Registrant</code></td><td class="num">4,916</td></tr>
+  <tr><td>TC</td><td><code>TTTC Webinar Date</code> holds a timestamp instead of an event date</td><td class="num">~300</td></tr>
+</table></div>
+<p class="dim">Several Subto challenge funnels also carry another challenge's Notes (for example <code>Bigger is Better Challenge</code> + <code>RV Challenge Registrant</code>, 2,267 records). Those are outside the four webinar types but come from the same copy-a-zap mistake.</p>
+
+<h2 id="sop">SOP — writing a webinar “01. New Activity”</h2>
+<ol>
+  <li><b>Copy the brand's current pattern exactly</b> from the <a href="#quick">quick reference</a>, including capitalization, spacing, the hyphen and the brand's date format. Don't normalize across brands; Gator's Goal and any smart view filtering on these strings depend on the exact text.</li>
+  <li><b>Build the date from the event, not the run time.</b> The date token is the webinar date. Format it in America/Phoenix, the timezone the Zapier formatters used.</li>
+  <li><b>Never ship a blank or literal date token.</b> Test with a real registrant and confirm the date is in the text: no <code>Date of webinar -</code> with nothing after it, and no <code>MMM DD, YYYY</code> left over.</li>
+  <li><b>Fill the date field the brand expects.</b> Subto and Gator: <code>Activity Date</code> = today. ZDB: leave it empty (it has never been written for webinars). TC like-lives: the date goes in <code>Notes.</code>, not <code>TTTC Webinar Date</code>.</li>
+  <li><b>AMAs leave the funnel field empty.</b> If you change that, tell whoever reports on AMAs: today they can only be found by text-searching the notes field.</li>
+  <li><b>Write to this brand's field ID.</b> IDs differ per org; use the internal field-ID table.</li>
+  <li><b>Verify after the first live run.</b> Group that brand's custom activities by the notes field (<a href="#repull">method below</a>) and confirm the new value appears with the expected count.</li>
+</ol>
+<div class="callout warn">Changing any of these patterns is a contract change — raise it as a Decision first, per the migration rules.</div>
+
+<h2 id="n8n">Gaps in the n8n replacement</h2>
+<p>The n8n workflow <code>SW | Create Custom Activity in Close</code> covers <b>live registrations
+only</b>. It has no like-live or AMA patterns. Measured against the data above:</p>
+<div class="tbl"><table>
+  <tr><th>Brand</th><th>Matches Zapier?</th><th>Difference</th></tr>
+  <tr><td>Subto</td><td><span class="pill">close</span></td><td>Writes <code>Live Webinar - June 2, 2026</code>; Zapier zero-pads the day (<code>June 02, 2026</code>).</td></tr>
+  <tr><td>ZDB</td><td><span class="pill cur">yes</span></td><td><code>{MM/DD} ZDB Registrant</code>, no <code>Activity Date</code> — matches.</td></tr>
+  <tr><td>Gator</td><td><span class="pill bad">funnel no</span></td><td>Notes <code>Date of webinar - {MM/DD/YYYY}</code> matches. The funnel is written to the field ID of TC's <code>Funnel Name</code>, which doesn't exist in Gator, instead of Gator's own <code>Funnel</code> field.</td></tr>
+  <tr><td>TC</td><td><span class="pill bad">no</span></td><td>Writes <code>Webinar Funnel</code> to <code>Funnel Name</code>; Zapier writes it to <code>Funnel</code>. Leaves <code>Notes.</code> empty and uses <code>TTTC Webinar Date</code> instead — the old pattern.</td></tr>
+</table></div>
+<p class="dim">The workflow's build notes still say Subto writes <code>Live Webinar - {MM/DD}</code>; the code already uses the long date.</p>
+
+<h2 id="repull">How to re-pull this data</h2>
+<p>The Close MCP <code>aggregation</code> tool can group custom activities by a text field's exact values. Run it once per brand org:</p>
+<ul>
+  <li><code>include_types</code>: <code>["custom_activity"]</code></li>
+  <li><code>group_by</code>: <code>[&lt;funnel field id&gt;, &lt;notes field id&gt;]</code></li>
+  <li><code>aggregations</code>: <code>[{"aggregation_type": "count"}]</code></li>
+</ul>
+<p>Group by the <b>notes field alone</b> as well. Records with an empty funnel field (every AMA) drop out of a two-field grouping. Adding <code>custom_activity_type_id</code> as a group confirms which activity type a value came from.</p>
+
+<h2>Open questions</h2>
+<ul>
+  <li>Are the 38,292 Gator <code>Date of webinar -</code> records recoverable from AC tags or the registrant sheets? Goal can't use them as they are.</li>
+  <li>Should AMAs start writing a funnel value? It would make them filterable, but any reporting that keys on empty funnel plus notes text would change.</li>
+  <li>Should the n8n lanes match today's Zapier output byte for byte (zero-padded Subto day, Gator/TC funnel field IDs) before the Wave 1 shadow comparison? A shadow run will report them as mismatches otherwise.</li>
+</ul>
+
+<p class="stamp" style="margin-top:48px">Public copy: internal field IDs and system references removed.</p>
+</main>
+
+<div id="toast">Copied</div>
+
+<script>
+  (function(){
+    var state={b:'all',t:'all'};
+    function apply(){
+      var rows=document.querySelectorAll('#quick-table tr[data-b]'),shown=0;
+      rows.forEach(function(r){
+        var ok=(state.b==='all'||r.dataset.b===state.b)&&(state.t==='all'||r.dataset.t===state.t);
+        r.style.display=ok?'':'none';if(ok)shown++;
+      });
+      document.getElementById('quick-none').style.display=shown?'none':'';
+    }
+    function wire(id,key){
+      var box=document.getElementById(id);
+      box.addEventListener('click',function(e){
+        var b=e.target.closest('button');if(!b)return;
+        box.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});
+        state[key]=b.dataset.v;apply();
+        if(key==='b'&&b.dataset.v!=='all'){
+          var d=document.getElementById('d-'+b.dataset.v.toLowerCase());if(d)d.open=true;
+        }
+      });
+    }
+    wire('qf-brand','b');wire('qf-type','t');
+
+    var toast=document.getElementById('toast'),tm;
+    document.addEventListener('click',function(e){
+      var c=e.target.closest('code.copy');if(!c)return;
+      var text=c.textContent;
+      function done(){toast.textContent='Copied: '+text;toast.classList.add('show');
+        clearTimeout(tm);tm=setTimeout(function(){toast.classList.remove('show')},1400);}
+      if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(done,fallback);}
+      else fallback();
+      function fallback(){var t=document.createElement('textarea');t.value=text;document.body.appendChild(t);
+        t.select();try{document.execCommand('copy')}catch(_){}document.body.removeChild(t);done();}
+    });
+  })();
+</script>
+</body>
+</html>
