@@ -1,8 +1,8 @@
 # Webinar Replay registration SOP
 
-A standalone SOP page for Subto Like LIVE (Webinar Replay) registration: EverWebinar #46
-into Close (find or create), ActiveCampaign, one emoji calendar invite, SDR round robin,
-Slack, the tracker, and SMS.
+A standalone SOP page for Like LIVE (Webinar Replay) registration across all six
+brands: Close (find or create), ActiveCampaign, one emoji calendar invite, tracker,
+and SMS — plus SDR / Slack on Subto and Deal Scout.
 
 ## Open it
 
@@ -13,6 +13,7 @@ Single self-contained file — no build step, no server, no login, and no networ
 
 ## Source
 
-Read from the live classic zap `371023152` and its Next Gen draft (disabled). This is a
-public copy: Close field IDs and other builder identifiers are removed. It is generated
-from the internal version — edit that and regenerate rather than editing this file directly.
+Read from the six brand Replay zaps (classic production; Next Gen drafts are not
+live). This is a public copy: Close field IDs and other builder identifiers are
+removed. It is generated from the internal version — edit that and regenerate
+rather than editing this file directly.

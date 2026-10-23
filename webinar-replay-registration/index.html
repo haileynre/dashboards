@@ -82,6 +82,7 @@
   .brand{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
   .brand h4{margin:0 0 6px}
   .brand p{margin:3px 0;font-size:13.5px}
+  .emojis{font-size:22px;letter-spacing:.08em;line-height:1.4;margin:4px 0 8px}
   ol li,ul li{margin:6px 0}
   details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:4px 16px;margin:12px 0}
   details[open]{padding-bottom:12px}
@@ -115,9 +116,9 @@
 <nav class="topbar"><div class="in">
   <a href="#who">Who</a>
   <a href="#before">Before ads</a>
-  <a href="#run">This run</a>
   <a href="#flow">The flow</a>
   <a href="#close">Close</a>
+  <a href="#brands">By brand</a>
   <a href="#standup">New date</a>
   <a href="#break">If it breaks</a>
   <a href="../webinar-new-activity-formats/">Funnel? SOP</a>
@@ -129,206 +130,274 @@
 
 <header>
   <h1>Webinar Replay registration SOP</h1>
-  <p class="lede">What happens when someone registers for a Subto <b>Like LIVE</b> (Webinar Replay)
-  on EverWebinar, and what to change before the next date goes live. One zap does Close, ActiveCampaign,
-  the calendar invite, SDR assignment, Slack, the tracker, and SMS.</p>
-  <p class="stamp">Subto · EverWebinar #46 · click any pattern to copy it</p>
+  <p class="lede">What happens when someone registers for a <b>Like LIVE</b> (Webinar Replay)
+  — and what changes per brand. Same shape for all six: find or create the Close lead,
+  write <code>01. New Activity</code>, upsert ActiveCampaign, add them to one emoji
+  calendar copy, then SMS if the phone is safe. Tags, EverWebinar numbers, Close
+  workspaces, emoji sets, and who assigns the SDR are brand-specific.</p>
+  <p class="stamp">Subto · Gator · Top Tier TC · ZDB · Deal Scout · Prop.ai · click any pattern to copy it</p>
 </header>
 
 <div class="stats">
-  <div class="stat"><b>1 zap</b><span>Close + AC + calendar + SDR + SMS</span></div>
+  <div class="stat"><b>6 brands</b><span>Same flow, different numbers and strings</span></div>
   <div class="stat"><b>Find or create</b><span>Close lead matched on email — no duplicates</span></div>
-  <div class="stat"><b>5 emoji events</b><span>Same replay, split for calendar volume</span></div>
-  <div class="stat"><b>326 / 731</b><span>Early / late AC SMS automations</span></div>
+  <div class="stat"><b>4 or 5 emoji events</b><span>Same replay, split for calendar volume</span></div>
+  <div class="stat"><b>1 day vs 2 days</b><span>Multi-day = a different EverWebinar ID per day</span></div>
 </div>
 
 <div class="std">
   <dl>
-    <dt>Live zap</dt><dd><code class="copy">371023152</code> — <code>Subto: Round Robin - 9/26 SDR | Like LIVE (WEBINARJAM)</code></dd>
-    <dt>Trigger</dt><dd>WebinarJam <code>register</code> on EverWebinar <b>#46</b> (SUBTO LIKE-LIVE)</dd>
-    <dt>This run</dt><dd>Title <code class="copy">Bigger</code> · date <code class="copy">9/26/26</code> · SMS cutoff <code class="copy">September 26, 12:30 pm</code> Arizona</dd>
-    <dt>Calendar</dt><dd><code class="copy">pace@subto.com</code></dd>
-    <dt>Editor</dt><dd><a href="https://zapier.com/editor/371023152">zapier.com/editor/371023152</a></dd>
+    <dt>What is live</dt><dd>The <b>classic zap</b> for each brand. Next Gen drafts exist as disabled imports — they are not live. Do not publish a draft while its classic twin is on.</dd>
+    <dt>Trigger (5 brands)</dt><dd>WebinarJam <code>register</code> on that brand’s EverWebinar number</dd>
+    <dt>Trigger (Prop.ai)</dt><dd>ClickFunnels contact created, then the zap registers them on <b>two</b> EverWebinar IDs (one per day)</dd>
+    <dt>Calendar</dt><dd>All brands: <code class="copy">pace@subto.com</code></dd>
+    <dt>Close</dt><dd>Each brand has its own workspace — except Prop.ai, which writes into <b>Subto</b></dd>
   </dl>
 </div>
 
-<div class="callout warn"><b>Next Gen draft is not live.</b> A translation of this zap exists as a
-disabled draft. Production is the classic zap. Do not publish the draft while
-<code>371023152</code> is on — both would write Close, AC, calendar, and Slack.</div>
+<div class="callout warn"><b>Next Gen drafts are not live.</b> Each brand has a disabled
+translation of its classic zap. Production is the classic zap. Publishing a draft
+beside its twin would double-write Close, ActiveCampaign, calendar, and (where used) Slack.</div>
 
 <h2 id="who">Who this is for</h2>
 <div class="brands">
-  <div class="brand"><h4>Ops / MarTech</h4><p class="dim">Stand up the next replay date — hardcodes plus the five emoji events — before ads go live.</p></div>
-  <div class="brand"><h4>Anyone debugging</h4><p class="dim">Trace a registrant who missed a tag, invite, SDR, Slack ping, or SMS.</p></div>
-  <div class="brand"><h4>Anyone writing Close</h4><p class="dim">This zap writes the live-edge <code>01. New Activity</code>. Current strings are still the historical Like LIVE pattern.</p></div>
+  <div class="brand"><h4>Ops / MarTech</h4><p class="dim">Stand up the next replay date — hardcodes plus the emoji events — before ads go live. Use the brand table so you change the right EverWebinar number, tag, and emoji set.</p></div>
+  <div class="brand"><h4>Anyone debugging</h4><p class="dim">Trace a registrant who missed a tag, invite, SDR, Slack ping, or SMS. Start with the shared flow, then the brand row.</p></div>
+  <div class="brand"><h4>Anyone writing Close</h4><p class="dim">These zaps write the live-edge <code>01. New Activity</code>. Most still use the historical Like LIVE strings. Prop.ai already writes the Oct 8 <code>Webinar Replay - MM/DD/YYYY</code> standard.</p></div>
 </div>
-<p>A registrant sees: a WebinarJam confirmation; their Close lead <b>found or created</b>
-(new records only are <code>New Lead</code>) with a Like LIVE activity; an ActiveCampaign contact
-on list 91 with a date tag and live-room link; a Google Calendar invite; and, if the phone is a
-US mobile, an SMS from automation 326 or 731. The assigned SDR gets a Slack ping.</p>
+<p>A registrant sees: confirmation (WebinarJam or ClickFunnels), their Close lead
+<b>found or created</b> (new records only are <code>New Lead</code>) with a Replay activity,
+an ActiveCampaign contact with a date tag and room link, a Google Calendar invite,
+and — if the phone is a US mobile — an SMS. On Subto and Deal Scout the assigned SDR
+also gets a Slack ping. On the other four brands, SDRs are assigned <b>manually after
+the webinar has ended</b>.</p>
 
 <h2 id="words">Vocabulary</h2>
 <div class="tbl"><table>
   <tr><th>We say</th><th>Means</th></tr>
   <tr><td><b>Like LIVE</b> / <b>Webinar Replay</b></td><td>Pre-recorded EverWebinar presented as live.</td></tr>
-  <tr><td><b>Emoji event</b></td><td>One of five identical calendar copies of the same replay, titled <code>&lt;emoji&gt; Bigger</code>. Same date, time, and title — different emoji so Google Calendar can hold the volume. Not five different tours.</td></tr>
-  <tr><td><b>Old lead</b></td><td>Close lead already has <b>SDR Lead Owner</b> set. Keep that owner; do not round-robin.</td></tr>
-  <tr><td><b>New lead</b></td><td>SDR Lead Owner empty. Pull the SDR roster, round-robin the next SDR, write the owner. This is <i>not</i> the same as find vs create.</td></tr>
+  <tr><td><b>Emoji event</b></td><td>Identical calendar copies of the same replay, titled <code>&lt;emoji&gt; &lt;run title&gt;</code>. Same date, time, and title — different emoji so Google Calendar can hold the volume. Not different tours.</td></tr>
+  <tr><td><b>Old lead</b></td><td>Close lead already has <b>SDR Lead Owner</b> set. Keep that owner; do not round-robin. Used on Subto and Deal Scout.</td></tr>
+  <tr><td><b>New lead</b></td><td>SDR Lead Owner empty. On Subto and Deal Scout, pull the SDR roster and write the next owner. This is <i>not</i> the same as find vs create.</td></tr>
   <tr><td><b>sms_safe</b></td><td>US number (<code>+1</code>) and Twilio carrier type is not <code>landline</code>, <code>voip</code>, or <code>unknown</code>.</td></tr>
-  <tr><td><b>America/Phoenix</b></td><td>Webinar date, current time, and the SMS cutoff. Arizona does not observe DST.</td></tr>
+  <tr><td><b>America/Phoenix</b></td><td>Webinar date, current time, and most SMS cutoffs. Arizona does not observe DST.</td></tr>
+  <tr><td><b>Day code</b></td><td>On a multi-day replay, each day is its own EverWebinar ID. One zap, one trigger, one register call per code.</td></tr>
 </table></div>
 
 <h2 id="before">What must exist before someone registers</h2>
 <p>The zap <b>finds</b> calendar events and <b>enrolls</b> existing ActiveCampaign automations. It does not create either.</p>
 <ol>
-  <li>EverWebinar <b>#46</b> has a schedule for this Phoenix date and time.</li>
-  <li>Five emoji events are on <code>pace@subto.com</code>, titles matching the Find Event searches.
+  <li>The brand’s EverWebinar number(s) have a schedule for this Phoenix date and time. Multi-day: every day has its own webinar ID.</li>
+  <li>Emoji events are on <code>pace@subto.com</code>, titles matching that brand’s Find Event searches.
     Create them from the <b>Webinar Creation</b> sheet (tab <code>Make Webinars</code>): one row per emoji,
-    column K checked, then <i>Calendar Events → Create or Update Selected Row</i>.</li>
-  <li>Per-run hardcodes in the zap match this date and title (tags, search terms, SMS cutoff).</li>
-  <li>ActiveCampaign automations <b>326</b> (early) and <b>731</b> (late) are still the Like-Live SMS campaigns.</li>
-  <li>The SDR roster Sub-Zap still returns the current list when called with Brand <code>Subto</code>.</li>
+    column K checked, then <i>Calendar Events → Create or Update Selected Row</i>. Prop.ai is <b>4</b> emojis; everyone else is 5.</li>
+  <li>Per-run hardcodes in that brand’s zap match this date and title (tags, search terms, SMS cutoff).</li>
+  <li>The brand’s early / late SMS automations (or Close outbox number) are still the Replay campaigns.</li>
+  <li>Subto and Deal Scout only: the SDR roster Sub-Zap still returns the current list for that brand.</li>
 </ol>
 
-<h2 id="run">This run — 9/26 Bigger</h2>
-<p>These strings are baked into the zap. A new date means changing all of them together.</p>
-<div class="tbl"><table>
-  <tr><th>Where</th><th>Current value</th></tr>
-  <tr><td>AC tag</td><td><code class="copy">9/26/26 Bigger Like Live Registrant</code></td></tr>
-  <tr><td>AC tag if <code>utm_medium</code> contains <code>email</code></td><td><code class="copy">9/26/26 Bigger Like Live Registrant (Email)</code></td></tr>
-  <tr><td>SMS cutoff (Arizona)</td><td><code class="copy">September 26, 12:30 pm</code> — 30 minutes before start</td></tr>
-  <tr><td>Calendar</td><td><code class="copy">pace@subto.com</code></td></tr>
-</table></div>
-<h3>Emoji events — same replay, five copies</h3>
-<div class="tbl"><table>
-  <tr><th>Slot</th><th>Find Event search</th></tr>
-  <tr><td>1</td><td><code class="copy">🚗 Bigger</code></td></tr>
-  <tr><td>2</td><td><code class="copy">🚐 Bigger</code></td></tr>
-  <tr><td>3</td><td><code class="copy">🚌 Bigger</code></td></tr>
-  <tr><td>4</td><td><code class="copy">📝 Bigger</code></td></tr>
-  <tr><td>5</td><td><code class="copy">💸 Bigger</code></td></tr>
-</table></div>
-<div class="callout warn">The draft's calendar window is <code>start_time = September 27</code> and
-<code>end_time = September 26</code>. That pair looks inverted — confirm against the live classic zap
-before the next date.</div>
-
 <h2 id="flow">What happens when someone registers</h2>
+<p>Shared path. Brand-specific values (webinar number, Funnel/Notes, AC list, emoji set, SMS, SDR) are in <a href="#brands">By brand</a>.</p>
 <div class="flow">
-  <div class="step"><div class="n">1 · Trigger</div><h4>EverWebinar #46</h4><p>Email, name, phone, live room URL, webinar datetime, UTMs.</p></div>
-  <div class="step"><div class="n">2 · Date</div><h4>Arizona MM/DD/YYYY</h4><p>From the webinar datetime, not from “now.” Feeds Close Notes and the tracker.</p></div>
+  <div class="step"><div class="n">1 · Trigger</div><h4>Register</h4><p>Five brands: EverWebinar <code>register</code>. Prop.ai: ClickFunnels contact, then API-register onto each day’s webinar ID.</p></div>
+  <div class="step"><div class="n">2 · Gates</div><h4>Brand filters</h4><p>Gator drops a registration if the webinar date is already past. Gator and ZDB wait 2 minutes before writing Close.</p></div>
   <div class="step"><div class="n">3 · Phone</div><h4>Format + lookup</h4><p>US to <code>+1…</code>, then Twilio carrier. Sets <code>sms_safe</code>.</p></div>
-  <div class="step"><div class="n">4 · Close lead</div><h4>Find or create</h4><p>Match on email. Reuse if found. Create as <code>New Lead</code> only on a miss.</p></div>
-  <div class="step"><div class="n">5 · Source</div><h4>Update the lead</h4><p>Last Source, Last Lead Type <code>Webinar Registrant</code>, Webinar Registration Lead Source.</p></div>
-  <div class="step"><div class="n">6 · Activity</div><h4>01. New Activity</h4><p>Live edge. Funnel? <code>Like Live</code>. Notes <code>Like Live Registration {date}</code>.</p></div>
-  <div class="step"><div class="n">7 · AC</div><h4>List 91</h4><p>Date tag + field 76 = live room. Extra <code>(Email)</code> tag when utm_medium is email.</p></div>
-  <div class="step"><div class="n">8 · Calendar</div><h4>One of five</h4><p>Rotating 1–5. Find that emoji event. Add the registrant’s email as attendee.</p></div>
-  <div class="step"><div class="n">9 · SDR</div><h4>Owner or round robin</h4><p>Owner already set → keep them. Empty → next SDR, then Slack + tracker.</p></div>
-  <div class="step"><div class="n">10 · SMS</div><h4>If sms_safe</h4><p>Phone onto the SMS sheet. Before cutoff → automation 326. After → 731.</p></div>
+  <div class="step"><div class="n">4 · Close lead</div><h4>Find or create</h4><p>Match on email in <b>that brand’s Close workspace</b>. Reuse if found. Create as <code>New Lead</code> only on a miss.</p></div>
+  <div class="step"><div class="n">5 · Activity</div><h4>01. New Activity</h4><p>Live edge. Funnel + Notes strings differ by brand. Lead Type is <code>Webinar</code>.</p></div>
+  <div class="step"><div class="n">6 · AC</div><h4>List + date tag</h4><p>Create or update. Live-room (and sometimes replay) custom fields. Extra <code>(Email)</code> tag when utm_medium is email.</p></div>
+  <div class="step"><div class="n">7 · Calendar</div><h4>One emoji copy</h4><p>Rotating slot. Find that emoji event on <code>pace@subto.com</code>. Add the registrant’s email as attendee.</p></div>
+  <div class="step"><div class="n">8 · SDR</div><h4>Two patterns</h4><p>Subto + Deal Scout: owner or round robin, then Slack. Everyone else: assigned manually after the webinar.</p></div>
+  <div class="step"><div class="n">9 · SMS</div><h4>If sms_safe</h4><p>Enroll in that brand’s early / late automation, and/or send from the brand’s Close outbox number.</p></div>
 </div>
-<p class="dim"><code>sms_safe = false</code> does not fail the zap. Close, AC, calendar, and SDR still run.
-Only the SMS sheet and automations 326 / 731 are skipped.</p>
+<p class="dim"><code>sms_safe = false</code> does not fail the zap. Close, AC, calendar, and (where used) SDR still run.
+Only the SMS sheet and SMS automations / Close texts are skipped.</p>
 
 <h2 id="close">Close — find or create, then the activity</h2>
 <div class="callout"><b>Find or create by email.</b> This is not a create-only step. If a lead with
-that email already exists, reuse it — never a second record. <code>New Lead</code> is the create
-default only; an existing lead keeps its current status. Source fields and
-<code>01. New Activity</code> then write on whichever lead came back.</div>
+that email already exists in <b>that brand’s workspace</b>, reuse it — never a second record.
+<code>New Lead</code> is the create default only; an existing lead keeps its current status.
+<code>01. New Activity</code> then writes on whichever lead came back.</div>
 <div class="tbl"><table>
   <tr><th>Result</th><th>What happens</th></tr>
-  <tr><td>Email already in Close</td><td>Reuse that lead. Do not create another.</td></tr>
+  <tr><td>Email already in that Close org</td><td>Reuse that lead. Do not create another.</td></tr>
   <tr><td>No match</td><td>Create one as <code>New Lead</code>, type <code>Webinar Registrant</code>.</td></tr>
 </table></div>
-<p>“Old lead” / “new lead” later in the zap means <b>SDR Lead Owner already set or not</b>,
+<p>“Old lead” / “new lead” later in the Subto and Deal Scout zaps means <b>SDR Lead Owner already set or not</b>,
 not find vs create. A found lead with an empty owner still goes through round robin.</p>
 
-<h3>01. New Activity — current contract</h3>
-<p>This is a live edge (38 writers, one listener). Do not rename these strings as a drive-by.
+<h3>01. New Activity — live edge</h3>
+<p>38 writers, one listener. Do not rename these strings as a drive-by.
 The Oct 8 standard says new writes should be <code>Webinar Replay - MM/DD/YYYY</code> — see the
-<a href="../webinar-new-activity-formats/">Funnel? SOP</a>. <b>This zap has not been changed.</b></p>
+<a href="../webinar-new-activity-formats/">Funnel? SOP</a>. <b>Only the Prop.ai Replay zap already writes that.</b>
+The other five still use the historical Like LIVE Funnel / Notes pair.</p>
 <div class="tbl"><table>
-  <tr><th>Field</th><th>Value written today</th></tr>
-  <tr><td>Activity Date</td><td>Webinar date <code>MM/DD/YYYY</code> (Arizona)</td></tr>
-  <tr><td>Lead Type</td><td><code class="copy">Webinar</code></td></tr>
-  <tr><td>Funnel?</td><td><code class="copy">Like Live</code></td></tr>
-  <tr><td>Notes</td><td><code class="copy">Like Live Registration MM/DD/YYYY</code></td></tr>
-  <tr><td>UTM source / campaign / medium / content / term</td><td>From the registration</td></tr>
+  <tr><th>Brand</th><th>Funnel field (today)</th><th>Notes (today)</th></tr>
+  <tr><td>Subto</td><td><code class="copy">Like Live</code></td><td><code class="copy">Like Live Registration MM/DD/YYYY</code></td></tr>
+  <tr><td>Gator</td><td><code class="copy">Gator Webinar</code></td><td><code class="copy">Like Live MM/DD/YYYY</code></td></tr>
+  <tr><td>Top Tier TC</td><td><code class="copy">Webinar Funnel</code></td><td><code class="copy">Like Live MM/DD/YYYY</code></td></tr>
+  <tr><td>ZDB</td><td><code class="copy">ZDB Webinar</code></td><td><code class="copy">Like Live MM/DD/YYYY</code></td></tr>
+  <tr><td>Deal Scout</td><td><code class="copy">Like Live Registrant</code></td><td><code class="copy">Like Live Registrant</code></td></tr>
+  <tr><td>Prop.ai</td><td><code class="copy">Webinar Replay - MM/DD/YYYY</code> <span class="pill cur">Oct 8</span></td><td>Not written — date lives on Funnel</td></tr>
 </table></div>
+
+<h2 id="brands">How the brands differ</h2>
+<p>Use this section when you stand up a date or debug a miss. The shared flow above does not change; these values do.</p>
+
+<h3>At a glance</h3>
+<div class="brands">
+  <div class="brand">
+    <h4>Subto</h4>
+    <p class="emojis">🚗 🚐 🚌 📝 💸</p>
+    <p>EverWebinar <b>#46</b></p>
+    <p>Close workspace <b>Subto</b></p>
+    <p>Title token <code>Bigger</code></p>
+    <p>SDR via zap + Slack</p>
+  </div>
+  <div class="brand">
+    <h4>Gator</h4>
+    <p class="emojis">🔑 🐊 🏠 ⭐️ 📝</p>
+    <p>EverWebinar <b>#47</b></p>
+    <p>Close workspace <b>Gator Method</b></p>
+    <p>Title token <code>Gator</code></p>
+    <p>Assigned after the webinar</p>
+  </div>
+  <div class="brand">
+    <h4>ZDB</h4>
+    <p class="emojis">💰 🚀 💸 🏦 0️⃣</p>
+    <p>EverWebinar <b>#48</b></p>
+    <p>Close workspace <b>Zero Down Business</b></p>
+    <p>Title token <code>Zero Down</code></p>
+    <p>Assigned after the webinar</p>
+  </div>
+  <div class="brand">
+    <h4>Top Tier TC</h4>
+    <p class="emojis">📄 📝 🔑 🗂️ 🧾</p>
+    <p>EverWebinar <b>#49</b></p>
+    <p>Close workspace <b>Top Tier TC</b></p>
+    <p>Title token <code>Top Tier</code></p>
+    <p>Assigned after the webinar</p>
+  </div>
+  <div class="brand">
+    <h4>Deal Scout</h4>
+    <p class="emojis">🏘️ 💸 🏡 🕵 📍</p>
+    <p>EverWebinar <b>#54</b> <span class="pill">own WJ account</span></p>
+    <p>Close workspace <b>Deal Scout</b></p>
+    <p>Title token <code>Deal Scout</code></p>
+    <p>SDR via zap + Slack + Hyros</p>
+  </div>
+  <div class="brand">
+    <h4>Prop.ai</h4>
+    <p class="emojis">🤝 🤖 📝 ✌️</p>
+    <p>EverWebinar <b>#40</b> + <b>#43</b> <span class="pill cur">2 days</span></p>
+    <p>Close workspace <b>Subto</b></p>
+    <p>Title token <code>Man vs. Machine</code></p>
+    <p>Assigned after the webinar · 4 calendars</p>
+  </div>
+</div>
+
+<h3>EverWebinar numbers, trigger, Close workspace</h3>
+<div class="callout"><b>Multi-day = a different webinar ID per day.</b> Prop.ai is the working model:
+one zap, one trigger, two codes. The zap fetches EverWebinar <code>#40</code> (Day 1) and
+<code>#43</code> (Day 2) and registers the same person on each. Do not reuse one webinar ID
+across days. Single-day brands keep one EverWebinar number; a new date on that number is a
+new <i>schedule</i>, not a new webinar ID.</div>
 <div class="tbl"><table>
-  <tr><th></th><th>Value</th><th>Why</th></tr>
-  <tr><td class="ok-mark">✓</td><td><code>Like Live Registration 09/26/2026</code></td><td>Current Notes pattern — date from the webinar, two-digit month and day</td></tr>
-  <tr><td class="no-mark">✗</td><td><code>Like Live Registration</code></td><td>Date token blank — unusable for reporting</td></tr>
-  <tr><td class="no-mark">✗</td><td><code>Webinar Replay - 09/26/2026</code> <span class="todo">not yet</span></td><td>The going-forward Funnel? standard — do not switch this zap without checking Subto smart views</td></tr>
+  <tr><th>Brand</th><th>EverWebinar</th><th>Trigger</th><th>Close workspace</th></tr>
+  <tr><td>Subto</td><td><code class="copy">#46</code></td><td>WebinarJam register</td><td>Subto</td></tr>
+  <tr><td>Gator</td><td><code class="copy">#47</code></td><td>WebinarJam register</td><td>Gator Method</td></tr>
+  <tr><td>ZDB</td><td><code class="copy">#48</code></td><td>WebinarJam register</td><td>Zero Down Business</td></tr>
+  <tr><td>Top Tier TC</td><td><code class="copy">#49</code></td><td>WebinarJam register</td><td>Top Tier TC</td></tr>
+  <tr><td>Deal Scout</td><td><code class="copy">#54</code></td><td>WebinarJam register — <b>different WebinarJam account</b> than the #46–#49 set</td><td>Deal Scout</td></tr>
+  <tr><td>Prop.ai</td><td><code class="copy">#40</code> Day 1 · <code class="copy">#43</code> Day 2</td><td>ClickFunnels contact created, then EverWebinar <code>/register</code> once per day code</td><td>Subto (shared with Subto Replay)</td></tr>
 </table></div>
+
+<h3>Calendar emoji sets</h3>
+<p>Every brand’s events live on <code>pace@subto.com</code>. Find Event searches
+<code>&lt;emoji&gt; &lt;run title&gt;</code>. Update the title token when the run name changes;
+keep the emoji set. Prop.ai is 4 by design; do not add a fifth.</p>
+<div class="tbl"><table>
+  <tr><th>Brand</th><th>Emojis</th><th>n</th><th>Find Event looks like</th></tr>
+  <tr><td>Subto</td><td>🚗 🚐 🚌 📝 💸</td><td>5</td><td><code class="copy">🚗 Bigger</code></td></tr>
+  <tr><td>Gator</td><td>🔑 🐊 🏠 ⭐️ 📝</td><td>5</td><td><code class="copy">🐊 Gator</code></td></tr>
+  <tr><td>ZDB</td><td>💰 🚀 💸 🏦 0️⃣</td><td>5</td><td><code class="copy">💰 Zero Down</code></td></tr>
+  <tr><td>Top Tier TC</td><td>📄 📝 🔑 🗂️ 🧾</td><td>5</td><td><code class="copy">🧾 Top Tier</code></td></tr>
+  <tr><td>Deal Scout</td><td>🏘️ 💸 🏡 🕵 📍</td><td>5</td><td><code class="copy">🏘️ Deal Scout</code></td></tr>
+  <tr><td>Prop.ai</td><td>🤝 🤖 📝 ✌️</td><td>4</td><td><code class="copy">🤝 Man vs. Machine</code></td></tr>
+</table></div>
+<div class="callout warn">The zap’s calendar search window is often hardcoded as a pair of month-day
+strings and sometimes looks inverted (start after end). Confirm the live classic zap’s window
+when you change the date — a miss here is the usual reason someone gets no invite.</div>
 
 <h3>ActiveCampaign</h3>
-<p>Create or update on list <b>91</b>. Field <b>76</b> = live room URL. Tags are a public contract
-(other automations listen) — do not add or rename them as part of an unrelated change.</p>
-
-<h3>Old lead vs new lead</h3>
-<p><b>Old lead</b> (SDR Lead Owner already set): tracker row labeled Old Lead, Slack the existing owner.</p>
-<p><b>New lead</b> (no owner): call the SDR roster Sub-Zap with Brand <code>Subto</code>, round-robin
-the next name onto SDR Lead Owner, Slack that person, tracker row labeled New Lead.</p>
-<p>Google Sheets is a <b>sink</b>. Do not make the tracker authoritative for a new system.</p>
-
-<h3>SMS</h3>
-<p>Only when <code>sms_safe</code>. Arizona <code>now</code> vs the hardcoded cutoff:</p>
+<p>Tags are a public contract (other automations listen). Do not add or rename them as part of an
+unrelated change. The date token is a per-run hardcode — change it with the calendar title and SMS cutoff.</p>
 <div class="tbl"><table>
-  <tr><th>When</th><th>Action</th></tr>
-  <tr><td>Before <code>September 26, 12:30 pm</code></td><td>ActiveCampaign automation <b>326</b> (Early SMS for Like-Live)</td></tr>
-  <tr><td>After that cutoff</td><td>ActiveCampaign automation <b>731</b> (Late SMS for Like-Live)</td></tr>
-  <tr><td>Exactly 12:30</td><td>Neither branch — the filters are strictly before / after</td></tr>
+  <tr><th>Brand</th><th>List</th><th>Room fields</th><th>Tag template</th><th>SMS automations</th></tr>
+  <tr><td>Subto</td><td>91</td><td>76 live</td><td><code class="copy">{M/D/YY} Bigger Like Live Registrant</code> (+ <code>(Email)</code>)</td><td>326 early · 731 late</td></tr>
+  <tr><td>Gator</td><td>48</td><td>44 / 45</td><td><code class="copy">{M/D/YY} Gator Like Live Registrant</code></td><td>268 · 269 · cutoff <code>{webinar date} 8:30am</code></td></tr>
+  <tr><td>ZDB</td><td>3</td><td>12 / 8</td><td><code class="copy">{M/D/YY} ZDB Replay Registrant</code></td><td>20 · 25 vs Arizona reminder datetime</td></tr>
+  <tr><td>Top Tier TC</td><td>1</td><td>22 live · 23 replay</td><td><code class="copy">{M/D/YY} TC Like Live Registrant</code> (+ <code>(Email)</code>)</td><td>104 · 126</td></tr>
+  <tr><td>Deal Scout</td><td>91</td><td>—</td><td><code class="copy">{M/D/YY} Deal Scout Like Live Registrant</code></td><td>812 · 811</td></tr>
+  <tr><td>Prop.ai</td><td>91</td><td>73 / 74 live · 81 / 82 replay (one pair per day)</td><td><code class="copy">{M/D/YY} MvM Registrant</code> (+ <code>(Email)</code>)</td><td>433 and 438 together when sms_safe</td></tr>
 </table></div>
-<p>The zap does not send the SMS. It enrolls the contact in ActiveCampaign.</p>
 
-<h2 id="contracts">What this zap writes</h2>
+<h3>SMS, SDR, and extras</h3>
 <div class="tbl"><table>
-  <tr><th>Surface</th><th>Value</th><th>Notes</th></tr>
-  <tr><td>Close lead</td><td>Find or create by email</td><td><code>New Lead</code> on create only</td></tr>
-  <tr><td>Close <code>01. New Activity</code></td><td><code>Like Live</code> / <code>Like Live Registration {date}</code></td><td>Live edge</td></tr>
-  <tr><td>Close SDR Lead Owner</td><td>User, new leads only</td><td>Round robin</td></tr>
-  <tr><td>AC list 91 + tags</td><td><code>9/26/26 Bigger Like Live Registrant</code></td><td>Plus <code>(Email)</code> when utm_medium is email</td></tr>
-  <tr><td>AC field 76</td><td>Live room URL</td><td></td></tr>
-  <tr><td>AC automations</td><td>326 early, 731 late</td><td><code>sms_safe</code> only</td></tr>
-  <tr><td>Google Calendar</td><td>Attendee on one emoji event</td><td>Events created on the Webinar Creation sheet</td></tr>
-  <tr><td>Slack</td><td>Like LIVE registrant ping with SDR mention</td><td></td></tr>
-  <tr><td>Tracker sheet</td><td>New Lead / Old Lead row</td><td>Sink</td></tr>
-  <tr><td>SMS sheet</td><td>Phone only</td><td><code>sms_safe</code> only</td></tr>
+  <tr><th>Brand</th><th>SDR / Slack</th><th>SMS from Close?</th><th>Also writes</th></tr>
+  <tr><td>Subto</td><td>Round robin + Slack when owner is empty</td><td>No — AC 326 / 731 only</td><td>Tracker Old Lead / New Lead</td></tr>
+  <tr><td>Gator</td><td>Manual, after the webinar</td><td>Yes · <code class="copy">+14803605166</code></td><td>Drops signup if webinar date &lt; today; 2 min delay</td></tr>
+  <tr><td>ZDB</td><td>Manual, after the webinar</td><td>Yes · <code class="copy">+13203639452</code> (hardcoded show times in the zap)</td><td>2 min delay; tracker current student vs lead</td></tr>
+  <tr><td>Top Tier TC</td><td>Manual, after the webinar</td><td>Yes · <code class="copy">+17178332332</code></td><td>Tracker old / new (no RR)</td></tr>
+  <tr><td>Deal Scout</td><td>Round robin + Slack when owner is empty</td><td>No — AC 812 / 811 only</td><td>Hyros</td></tr>
+  <tr><td>Prop.ai</td><td>Manual, after the webinar</td><td>No — AC 433 + 438</td><td>HighLevel tag <code>Man Vs Machine Registrant</code>; Prop backup sheet; Pace-referral funnel adds extra HighLevel tags</td></tr>
+</table></div>
+
+<h3>What this zap writes (shared surfaces)</h3>
+<div class="tbl"><table>
+  <tr><th>Surface</th><th>Always</th><th>Brand-specific</th></tr>
+  <tr><td>Close lead</td><td>Find or create by email · <code>New Lead</code> on create only</td><td>Which Close workspace</td></tr>
+  <tr><td>Close <code>01. New Activity</code></td><td>Lead Type <code>Webinar</code> + UTMs</td><td>Funnel / Notes pair</td></tr>
+  <tr><td>Close SDR Lead Owner</td><td>—</td><td>Subto + Deal Scout only</td></tr>
+  <tr><td>ActiveCampaign</td><td>Create/update + dated registrant tag</td><td>List, room fields, automations</td></tr>
+  <tr><td>Google Calendar</td><td>Attendee on one emoji event, <code>pace@subto.com</code></td><td>Emoji set, run title, 4 vs 5 copies</td></tr>
+  <tr><td>Slack</td><td>—</td><td>Subto + Deal Scout only</td></tr>
+  <tr><td>Tracker sheet</td><td>Sink — do not make it authoritative</td><td>Old/new vs current-student labels</td></tr>
+  <tr><td>SMS</td><td>Only if <code>sms_safe</code></td><td>AC automations and/or Close from-number</td></tr>
 </table></div>
 
 <p class="dim">Close field IDs, sheet IDs and other builder identifiers are kept in the internal version of this page.</p>
 
 <h2 id="standup">Standing up a new replay date</h2>
-<p>Change the <b>hardcodes</b>. Do not clone the zap if you can avoid it — cloning is how we
-ended up with a dated copy per run. If you must clone, pause the old one in the same window.</p>
+<p>Change the <b>hardcodes on that brand’s classic zap</b>. Do not clone the zap if you can avoid it —
+cloning is how we ended up with a dated copy per run. If you must clone, pause the old one in the same window.</p>
 <ol class="check">
-  <li><span class="n">1</span><div>Confirm EverWebinar #46 has the new Phoenix schedule.</div></li>
-  <li><span class="n">2</span><div>Create the five emoji events on <code>pace@subto.com</code> from the Webinar Creation sheet. Titles must match the five Find Event searches.</div></li>
-  <li><span class="n">3</span><div>Open <code>371023152</code> and update together: AC tags
-    (<code>{M/D/YY} Bigger Like Live Registrant</code> and the <code>(Email)</code> variant),
-    the five Find Event search terms and date window, and the SMS cutoff
-    (<code>{Month DD}, 12:30 pm</code> — 30 minutes before this run’s start).</div></li>
-  <li><span class="n">4</span><div>Test-register twice: a net-new email, and an email already in Close.
+  <li><span class="n">1</span><div>Confirm the brand’s EverWebinar number has the new Phoenix schedule. Multi-day (Prop.ai): confirm <b>both</b> day codes.</div></li>
+  <li><span class="n">2</span><div>Create the emoji events on <code>pace@subto.com</code> from the Webinar Creation sheet. Titles must match that brand’s Find Event searches (emoji set + this run’s title token). Four events for Prop.ai, five for everyone else.</div></li>
+  <li><span class="n">3</span><div>On that brand’s classic zap, update together: AC tags
+    (<code>{M/D/YY} … Registrant</code> and the <code>(Email)</code> variant when the brand has one),
+    the Find Event search terms and date window, and the SMS cutoff.</div></li>
+  <li><span class="n">4</span><div>Test-register twice: a net-new email, and an email already in <b>that</b> Close workspace.
     Confirm find-or-create reused the existing lead (no duplicate).</div></li>
   <li><span class="n">5</span><div>Then check, in order: Close lead + <code>01. New Activity</code> →
-    AC tag + field 76 → exactly one calendar attendee → Slack ping → tracker row →
-    <code>sms_safe</code> on a real mobile → SMS sheet + automation 326 or 731.</div></li>
-  <li><span class="n">6</span><div>After the first live hour, group Close activities by Notes and AC tags
-    by the new date string. Confirm the date is in the text — no
-    <code>Like Live Registration</code> with a blank token.</div></li>
+    AC tag + room field → exactly one calendar attendee → tracker row →
+    <code>sms_safe</code> on a real mobile → SMS path. Subto / Deal Scout: Slack ping with an owner.</div></li>
+  <li><span class="n">6</span><div>After the first live hour, group Close activities by Funnel / Notes and AC tags
+    by the new date string. Confirm the date is in the text — no blank token.</div></li>
 </ol>
 
 <h2 id="break">If something breaks</h2>
 <div class="tbl"><table>
   <tr><th>Symptom</th><th>Likely cause</th><th>Check</th></tr>
-  <tr><td>No calendar invite</td><td>Emoji events missing, title mismatch, or the date window</td><td>Webinar Creation sheet + <code>pace@subto.com</code>; Find Event queries</td></tr>
-  <tr><td>Two invites or two tags</td><td>Classic zap and the Next Gen draft both on</td><td>Draft stays disabled while <code>371023152</code> is on</td></tr>
-  <tr><td>Duplicate Close lead</td><td>Step is create-only, or email didn’t match</td><td>Must be find or create by email</td></tr>
-  <tr><td>No SDR / Slack has no owner</td><td>Roster Sub-Zap or the round-robin Code step</td><td>SDR Lead Owner on the lead</td></tr>
-  <tr><td>Old lead got a new SDR</td><td>Owner field empty when it should not be</td><td>SDR Lead Owner before the run</td></tr>
-  <tr><td>No SMS, everything else fine</td><td><code>sms_safe = false</code> or cutoff not updated</td><td>Carrier reason; cutoff vs Arizona now</td></tr>
-  <tr><td>SMS at the wrong time</td><td>Cutoff still <code>September 26, 12:30 pm</code></td><td>Hardcode for this run</td></tr>
-  <tr><td>Close Notes have no date</td><td>Webinar date parse failed</td><td>Trigger datetime → <code>MM/DD/YYYY</code> Arizona</td></tr>
-  <tr><td>Funnel? is <code>Like Live</code> not <code>Webinar Replay - …</code></td><td>Current contract</td><td>Expected until a Decision changes this zap</td></tr>
+  <tr><td>No calendar invite</td><td>Emoji events missing, title mismatch, or the date window</td><td>Webinar Creation sheet + <code>pace@subto.com</code>; Find Event queries for <b>this</b> brand’s emoji + title</td></tr>
+  <tr><td>Two invites or two tags</td><td>Classic zap and the Next Gen draft both on</td><td>Draft stays disabled while the classic zap is on</td></tr>
+  <tr><td>Duplicate Close lead</td><td>Step is create-only, or you looked in the wrong workspace</td><td>Must be find or create by email in that brand’s Close org. Prop.ai → Subto.</td></tr>
+  <tr><td>No SDR / Slack has no owner</td><td>Subto or Deal Scout roster / round-robin step — or you expected the zap to assign on a brand that assigns after the webinar</td><td>Gator, TC, ZDB, Prop.ai do not assign in the zap</td></tr>
+  <tr><td>Old lead got a new SDR</td><td>Owner field empty when it should not be (Subto / Deal Scout)</td><td>SDR Lead Owner before the run</td></tr>
+  <tr><td>Gator signup vanished</td><td>Webinar date is in the past — Gator filters those out</td><td>Trigger webinar date vs today</td></tr>
+  <tr><td>Prop.ai Day 2 room missing</td><td>Day 2 register failed, or you reused one webinar ID for both days</td><td>EverWebinar #40 and #43 each got a register; AC fields 74 / 82</td></tr>
+  <tr><td>No SMS, everything else fine</td><td><code>sms_safe = false</code> or cutoff not updated</td><td>Carrier reason; that brand’s cutoff vs Arizona now</td></tr>
+  <tr><td>Close Notes have no date</td><td>Webinar date parse failed (or Deal Scout / Prop.ai, which do not put the date in Notes)</td><td>Trigger datetime → Arizona <code>MM/DD/YYYY</code> on the field that brand actually writes</td></tr>
+  <tr><td>Funnel? is still <code>Like Live</code> not <code>Webinar Replay - …</code></td><td>Current contract on five brands</td><td>Expected until a Decision changes that zap. Prop.ai already uses the standard.</td></tr>
 </table></div>
 
 <h2 id="out">Out of scope</h2>
@@ -336,8 +405,7 @@ ended up with a dated copy per run. If you must clone, pause the old one in the 
   <div class="brand"><h4>Other webinar types</h4><p class="dim">Live Zoom, AMAs, Fireside Chats, NOLB / Swoogo — different zaps.</p></div>
   <div class="brand"><h4>Attendance outcomes</h4><p class="dim">Attendee, Non Attendee, Left Early, Saw CTA — staff update those in Close by hand after the replay.</p></div>
   <div class="brand"><h4>Creating the emoji events</h4><p class="dim">Webinar Creation sheet, not this zap.</p></div>
-  <div class="brand"><h4>The SMS body</h4><p class="dim">Lives in ActiveCampaign automations 326 and 731.</p></div>
-  <div class="brand"><h4>Sister brands</h4><p class="dim">Gator, TC, and ZDB have twins — same shape, own AC, tags, emoji set, and zap ID.</p></div>
+  <div class="brand"><h4>The SMS body</h4><p class="dim">Lives in that brand’s ActiveCampaign automations (or the Close SMS template).</p></div>
 </div>
 
 <p class="dim">Related: <a href="../webinar-new-activity-formats/">Webinar “01. New Activity” / Funnel? SOP</a>.</p>
