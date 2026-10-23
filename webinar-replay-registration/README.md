@@ -7,7 +7,7 @@ Slack, the tracker, and SMS.
 ## Open it
 
 Double-click `index.html`, or
-https://haileynre.github.io/dashboards/webinar-replay-registration/
+https://haileynre.github.io/webinar-replay-registration/
 
 Single self-contained file — no build step, no server, no login, and no network calls.
 
