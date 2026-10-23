@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Webinar Replay registration SOP</title>
+<script>
+  (function(){var t;try{t=localStorage.getItem('nre-theme')}catch(e){}
+    document.documentElement.setAttribute('data-theme',t||'light');})();
+  function nreToggleTheme(){
+    var r=document.documentElement,t=r.getAttribute('data-theme')==='light'?'dark':'light';
+    r.setAttribute('data-theme',t);try{localStorage.setItem('nre-theme',t)}catch(e){}
+    nreThemeLabel();
+  }
+  function nreThemeLabel(){
+    var b=document.getElementById('theme-btn');if(!b)return;
+    var light=document.documentElement.getAttribute('data-theme')==='light';
+    b.textContent=light?'☾ Dark mode':'☀ Light mode';
+    b.setAttribute('aria-label',light?'Switch to dark mode':'Switch to light mode');
+  }
+  document.addEventListener('DOMContentLoaded',nreThemeLabel);
+</script>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2333; --line:#30363d;
+    --ink:#e6edf3; --dim:#8b949e; --accent:#58a6ff; --accent-dim:rgba(88,166,255,.12);
+    --ok:#56b4e9; --warn:#e69f00; --err:#ff8a5c;
+    --font:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono:ui-monospace, "SF Mono", Menlo, monospace;
+    --radius:10px;
+  }
+  :root[data-theme="light"]{
+    --bg:#ffffff; --panel:#f6f8fa; --panel2:#eef1f5; --line:#c9d1d9;
+    --ink:#1f2328; --dim:#57606a; --accent:#0550ae; --accent-dim:rgba(5,80,174,.10);
+    --ok:#0072b2; --warn:#9a5b00; --err:#b83d00;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:70px}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.6 var(--font)}
+  .topbar{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
+  .topbar .in{max-width:1180px;margin:0 auto;padding:10px 22px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .topbar a{font-size:13px;color:var(--dim);text-decoration:none;padding:4px 9px;border-radius:6px}
+  .topbar a:hover{background:var(--panel2);color:var(--ink)}
+  .topbar .spacer{flex:1}
+  button{font:inherit;cursor:pointer}
+  #theme-btn{font-size:12.5px;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:4px 10px}
+  .wrap{max-width:1180px;margin:0 auto;padding:36px 22px 110px}
+  h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin:0 0 10px}
+  .lede{font-size:17px;color:var(--dim);max-width:46em;margin:0 0 10px}
+  .stamp{font:12px/1.4 var(--mono);color:var(--dim)}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);
+     margin:52px 0 14px;font-weight:700}
+  h3{font-size:18px;margin:26px 0 8px}
+  h4{font-size:14.5px;margin:20px 0 6px}
+  p{margin:8px 0}
+  .dim{color:var(--dim)}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel2);
+    border:1px solid var(--line);border-radius:5px;padding:1px 6px;white-space:pre-wrap;word-break:break-word}
+  code.copy{cursor:copy}
+  code.copy:hover{border-color:var(--accent)}
+  .callout{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:var(--radius);padding:12px 16px;margin:16px 0}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout.err{border-left-color:var(--err)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:22px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+  .stat b{display:block;font-size:24px;letter-spacing:-.03em}
+  .stat span{display:block;font-size:12.5px;color:var(--dim);margin-top:4px}
+  .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700}
+  tr:last-child td{border-bottom:0}
+  .ids td code{font-size:11.5px}
+  .pill{display:inline-block;font:700 11px/1.2 var(--mono);padding:3px 8px;border-radius:99px;
+    border:1px solid var(--line);background:var(--panel2);white-space:nowrap}
+  .pill.cur{color:var(--ok);border-color:var(--ok)}
+  .pill.bad{color:var(--err);border-color:var(--err)}
+  .brands{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin:14px 0}
+  .brand{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+  .brand h4{margin:0 0 6px}
+  .brand p{margin:3px 0;font-size:13.5px}
+  ol li,ul li{margin:6px 0}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:4px 16px;margin:12px 0}
+  details[open]{padding-bottom:12px}
+  summary{cursor:pointer;font-weight:700;font-size:16px;padding:10px 0}
+  .std{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--ok);
+    border-radius:var(--radius);padding:16px 18px;margin:16px 0}
+  .std dl{display:grid;grid-template-columns:160px 1fr;gap:6px 14px;margin:12px 0 0;font-size:14px}
+  .std dt{color:var(--dim)}
+  .std dd{margin:0}
+  .ok-mark{color:var(--ok);font-weight:700}
+  .no-mark{color:var(--err);font-weight:700}
+  .todo{display:inline-block;font:700 11px/1.2 var(--mono);padding:3px 8px;border-radius:99px;border:1px solid var(--warn);color:var(--warn)}
+  .flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:16px 0}
+  .flow .step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+  .flow .n{font:700 11px/1 var(--mono);color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+  .flow h4{margin:8px 0 4px}
+  .flow p{margin:0;font-size:13.5px;color:var(--dim)}
+  .check{list-style:none;padding:0;margin:12px 0}
+  .check li{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px 16px;margin:8px 0;display:flex;gap:12px;align-items:flex-start}
+  .check .n{flex:0 0 28px;height:28px;border-radius:50%;background:var(--accent-dim);color:var(--accent);
+    font:700 13px/28px var(--mono);text-align:center}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+    font-size:13px;padding:7px 14px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+  #toast.show{opacity:1}
+  @media print{.topbar,#toast{display:none}details{border:0}details>*{display:block}}
+</style>
+</head>
+<body>
+
+<nav class="topbar"><div class="in">
+  <a href="#who">Who</a>
+  <a href="#before">Before ads</a>
+  <a href="#run">This run</a>
+  <a href="#flow">The flow</a>
+  <a href="#close">Close</a>
+  <a href="#standup">New date</a>
+  <a href="#break">If it breaks</a>
+  <a href="../webinar-new-activity-formats/">Funnel? SOP</a>
+  <span class="spacer"></span>
+  <button id="theme-btn" onclick="nreToggleTheme()">☾ Dark mode</button>
+</div></nav>
+
+<main class="wrap">
+
+<header>
+  <h1>Webinar Replay registration SOP</h1>
+  <p class="lede">What happens when someone registers for a Subto <b>Like LIVE</b> (Webinar Replay)
+  on EverWebinar, and what to change before the next date goes live. One zap does Close, ActiveCampaign,
+  the calendar invite, SDR assignment, Slack, the tracker, and SMS.</p>
+  <p class="stamp">Subto · EverWebinar #46 · click any pattern to copy it</p>
+</header>
+
+<div class="stats">
+  <div class="stat"><b>1 zap</b><span>Close + AC + calendar + SDR + SMS</span></div>
+  <div class="stat"><b>Find or create</b><span>Close lead matched on email — no duplicates</span></div>
+  <div class="stat"><b>5 emoji events</b><span>Same replay, split for calendar volume</span></div>
+  <div class="stat"><b>326 / 731</b><span>Early / late AC SMS automations</span></div>
+</div>
+
+<div class="std">
+  <dl>
+    <dt>Live zap</dt><dd><code class="copy">371023152</code> — <code>Subto: Round Robin - 9/26 SDR | Like LIVE (WEBINARJAM)</code></dd>
+    <dt>Trigger</dt><dd>WebinarJam <code>register</code> on EverWebinar <b>#46</b> (SUBTO LIKE-LIVE)</dd>
+    <dt>This run</dt><dd>Title <code class="copy">Bigger</code> · date <code class="copy">9/26/26</code> · SMS cutoff <code class="copy">September 26, 12:30 pm</code> Arizona</dd>
+    <dt>Calendar</dt><dd><code class="copy">pace@subto.com</code></dd>
+    <dt>Editor</dt><dd><a href="https://zapier.com/editor/371023152">zapier.com/editor/371023152</a></dd>
+  </dl>
+</div>
+
+<div class="callout warn"><b>Next Gen draft is not live.</b> A translation of this zap exists as a
+disabled draft. Production is the classic zap. Do not publish the draft while
+<code>371023152</code> is on — both would write Close, AC, calendar, and Slack.</div>
+
+<h2 id="who">Who this is for</h2>
+<div class="brands">
+  <div class="brand"><h4>Ops / MarTech</h4><p class="dim">Stand up the next replay date — hardcodes plus the five emoji events — before ads go live.</p></div>
+  <div class="brand"><h4>Anyone debugging</h4><p class="dim">Trace a registrant who missed a tag, invite, SDR, Slack ping, or SMS.</p></div>
+  <div class="brand"><h4>Anyone writing Close</h4><p class="dim">This zap writes the live-edge <code>01. New Activity</code>. Current strings are still the historical Like LIVE pattern.</p></div>
+</div>
+<p>A registrant sees: a WebinarJam confirmation; their Close lead <b>found or created</b>
+(new records only are <code>New Lead</code>) with a Like LIVE activity; an ActiveCampaign contact
+on list 91 with a date tag and live-room link; a Google Calendar invite; and, if the phone is a
+US mobile, an SMS from automation 326 or 731. The assigned SDR gets a Slack ping.</p>
+
+<h2 id="words">Vocabulary</h2>
+<div class="tbl"><table>
+  <tr><th>We say</th><th>Means</th></tr>
+  <tr><td><b>Like LIVE</b> / <b>Webinar Replay</b></td><td>Pre-recorded EverWebinar presented as live.</td></tr>
+  <tr><td><b>Emoji event</b></td><td>One of five identical calendar copies of the same replay, titled <code>&lt;emoji&gt; Bigger</code>. Same date, time, and title — different emoji so Google Calendar can hold the volume. Not five different tours.</td></tr>
+  <tr><td><b>Old lead</b></td><td>Close lead already has <b>SDR Lead Owner</b> set. Keep that owner; do not round-robin.</td></tr>
+  <tr><td><b>New lead</b></td><td>SDR Lead Owner empty. Pull the SDR roster, round-robin the next SDR, write the owner. This is <i>not</i> the same as find vs create.</td></tr>
+  <tr><td><b>sms_safe</b></td><td>US number (<code>+1</code>) and Twilio carrier type is not <code>landline</code>, <code>voip</code>, or <code>unknown</code>.</td></tr>
+  <tr><td><b>America/Phoenix</b></td><td>Webinar date, current time, and the SMS cutoff. Arizona does not observe DST.</td></tr>
+</table></div>
+
+<h2 id="before">What must exist before someone registers</h2>
+<p>The zap <b>finds</b> calendar events and <b>enrolls</b> existing ActiveCampaign automations. It does not create either.</p>
+<ol>
+  <li>EverWebinar <b>#46</b> has a schedule for this Phoenix date and time.</li>
+  <li>Five emoji events are on <code>pace@subto.com</code>, titles matching the Find Event searches.
+    Create them from the <b>Webinar Creation</b> sheet (tab <code>Make Webinars</code>): one row per emoji,
+    column K checked, then <i>Calendar Events → Create or Update Selected Row</i>.</li>
+  <li>Per-run hardcodes in the zap match this date and title (tags, search terms, SMS cutoff).</li>
+  <li>ActiveCampaign automations <b>326</b> (early) and <b>731</b> (late) are still the Like-Live SMS campaigns.</li>
+  <li>The SDR roster Sub-Zap still returns the current list when called with Brand <code>Subto</code>.</li>
+</ol>
+
+<h2 id="run">This run — 9/26 Bigger</h2>
+<p>These strings are baked into the zap. A new date means changing all of them together.</p>
+<div class="tbl"><table>
+  <tr><th>Where</th><th>Current value</th></tr>
+  <tr><td>AC tag</td><td><code class="copy">9/26/26 Bigger Like Live Registrant</code></td></tr>
+  <tr><td>AC tag if <code>utm_medium</code> contains <code>email</code></td><td><code class="copy">9/26/26 Bigger Like Live Registrant (Email)</code></td></tr>
+  <tr><td>SMS cutoff (Arizona)</td><td><code class="copy">September 26, 12:30 pm</code> — 30 minutes before start</td></tr>
+  <tr><td>Calendar</td><td><code class="copy">pace@subto.com</code></td></tr>
+</table></div>
+<h3>Emoji events — same replay, five copies</h3>
+<div class="tbl"><table>
+  <tr><th>Slot</th><th>Find Event search</th></tr>
+  <tr><td>1</td><td><code class="copy">🚗 Bigger</code></td></tr>
+  <tr><td>2</td><td><code class="copy">🚐 Bigger</code></td></tr>
+  <tr><td>3</td><td><code class="copy">🚌 Bigger</code></td></tr>
+  <tr><td>4</td><td><code class="copy">📝 Bigger</code></td></tr>
+  <tr><td>5</td><td><code class="copy">💸 Bigger</code></td></tr>
+</table></div>
+<div class="callout warn">The draft's calendar window is <code>start_time = September 27</code> and
+<code>end_time = September 26</code>. That pair looks inverted — confirm against the live classic zap
+before the next date.</div>
+
+<h2 id="flow">What happens when someone registers</h2>
+<div class="flow">
+  <div class="step"><div class="n">1 · Trigger</div><h4>EverWebinar #46</h4><p>Email, name, phone, live room URL, webinar datetime, UTMs.</p></div>
+  <div class="step"><div class="n">2 · Date</div><h4>Arizona MM/DD/YYYY</h4><p>From the webinar datetime, not from “now.” Feeds Close Notes and the tracker.</p></div>
+  <div class="step"><div class="n">3 · Phone</div><h4>Format + lookup</h4><p>US to <code>+1…</code>, then Twilio carrier. Sets <code>sms_safe</code>.</p></div>
+  <div class="step"><div class="n">4 · Close lead</div><h4>Find or create</h4><p>Match on email. Reuse if found. Create as <code>New Lead</code> only on a miss.</p></div>
+  <div class="step"><div class="n">5 · Source</div><h4>Update the lead</h4><p>Last Source, Last Lead Type <code>Webinar Registrant</code>, Webinar Registration Lead Source.</p></div>
+  <div class="step"><div class="n">6 · Activity</div><h4>01. New Activity</h4><p>Live edge. Funnel? <code>Like Live</code>. Notes <code>Like Live Registration {date}</code>.</p></div>
+  <div class="step"><div class="n">7 · AC</div><h4>List 91</h4><p>Date tag + field 76 = live room. Extra <code>(Email)</code> tag when utm_medium is email.</p></div>
+  <div class="step"><div class="n">8 · Calendar</div><h4>One of five</h4><p>Rotating 1–5. Find that emoji event. Add the registrant’s email as attendee.</p></div>
+  <div class="step"><div class="n">9 · SDR</div><h4>Owner or round robin</h4><p>Owner already set → keep them. Empty → next SDR, then Slack + tracker.</p></div>
+  <div class="step"><div class="n">10 · SMS</div><h4>If sms_safe</h4><p>Phone onto the SMS sheet. Before cutoff → automation 326. After → 731.</p></div>
+</div>
+<p class="dim"><code>sms_safe = false</code> does not fail the zap. Close, AC, calendar, and SDR still run.
+Only the SMS sheet and automations 326 / 731 are skipped.</p>
+
+<h2 id="close">Close — find or create, then the activity</h2>
+<div class="callout"><b>Find or create by email.</b> This is not a create-only step. If a lead with
+that email already exists, reuse it — never a second record. <code>New Lead</code> is the create
+default only; an existing lead keeps its current status. Source fields and
+<code>01. New Activity</code> then write on whichever lead came back.</div>
+<div class="tbl"><table>
+  <tr><th>Result</th><th>What happens</th></tr>
+  <tr><td>Email already in Close</td><td>Reuse that lead. Do not create another.</td></tr>
+  <tr><td>No match</td><td>Create one as <code>New Lead</code>, type <code>Webinar Registrant</code>.</td></tr>
+</table></div>
+<p>“Old lead” / “new lead” later in the zap means <b>SDR Lead Owner already set or not</b>,
+not find vs create. A found lead with an empty owner still goes through round robin.</p>
+
+<h3>01. New Activity — current contract</h3>
+<p>This is a live edge (38 writers, one listener). Do not rename these strings as a drive-by.
+The Oct 8 standard says new writes should be <code>Webinar Replay - MM/DD/YYYY</code> — see the
+<a href="../webinar-new-activity-formats/">Funnel? SOP</a>. <b>This zap has not been changed.</b></p>
+<div class="tbl"><table>
+  <tr><th>Field</th><th>Value written today</th></tr>
+  <tr><td>Activity Date</td><td>Webinar date <code>MM/DD/YYYY</code> (Arizona)</td></tr>
+  <tr><td>Lead Type</td><td><code class="copy">Webinar</code></td></tr>
+  <tr><td>Funnel?</td><td><code class="copy">Like Live</code></td></tr>
+  <tr><td>Notes</td><td><code class="copy">Like Live Registration MM/DD/YYYY</code></td></tr>
+  <tr><td>UTM source / campaign / medium / content / term</td><td>From the registration</td></tr>
+</table></div>
+<div class="tbl"><table>
+  <tr><th></th><th>Value</th><th>Why</th></tr>
+  <tr><td class="ok-mark">✓</td><td><code>Like Live Registration 09/26/2026</code></td><td>Current Notes pattern — date from the webinar, two-digit month and day</td></tr>
+  <tr><td class="no-mark">✗</td><td><code>Like Live Registration</code></td><td>Date token blank — unusable for reporting</td></tr>
+  <tr><td class="no-mark">✗</td><td><code>Webinar Replay - 09/26/2026</code> <span class="todo">not yet</span></td><td>The going-forward Funnel? standard — do not switch this zap without checking Subto smart views</td></tr>
+</table></div>
+
+<h3>ActiveCampaign</h3>
+<p>Create or update on list <b>91</b>. Field <b>76</b> = live room URL. Tags are a public contract
+(other automations listen) — do not add or rename them as part of an unrelated change.</p>
+
+<h3>Old lead vs new lead</h3>
+<p><b>Old lead</b> (SDR Lead Owner already set): tracker row labeled Old Lead, Slack the existing owner.</p>
+<p><b>New lead</b> (no owner): call the SDR roster Sub-Zap with Brand <code>Subto</code>, round-robin
+the next name onto SDR Lead Owner, Slack that person, tracker row labeled New Lead.</p>
+<p>Google Sheets is a <b>sink</b>. Do not make the tracker authoritative for a new system.</p>
+
+<h3>SMS</h3>
+<p>Only when <code>sms_safe</code>. Arizona <code>now</code> vs the hardcoded cutoff:</p>
+<div class="tbl"><table>
+  <tr><th>When</th><th>Action</th></tr>
+  <tr><td>Before <code>September 26, 12:30 pm</code></td><td>ActiveCampaign automation <b>326</b> (Early SMS for Like-Live)</td></tr>
+  <tr><td>After that cutoff</td><td>ActiveCampaign automation <b>731</b> (Late SMS for Like-Live)</td></tr>
+  <tr><td>Exactly 12:30</td><td>Neither branch — the filters are strictly before / after</td></tr>
+</table></div>
+<p>The zap does not send the SMS. It enrolls the contact in ActiveCampaign.</p>
+
+<h2 id="contracts">What this zap writes</h2>
+<div class="tbl"><table>
+  <tr><th>Surface</th><th>Value</th><th>Notes</th></tr>
+  <tr><td>Close lead</td><td>Find or create by email</td><td><code>New Lead</code> on create only</td></tr>
+  <tr><td>Close <code>01. New Activity</code></td><td><code>Like Live</code> / <code>Like Live Registration {date}</code></td><td>Live edge</td></tr>
+  <tr><td>Close SDR Lead Owner</td><td>User, new leads only</td><td>Round robin</td></tr>
+  <tr><td>AC list 91 + tags</td><td><code>9/26/26 Bigger Like Live Registrant</code></td><td>Plus <code>(Email)</code> when utm_medium is email</td></tr>
+  <tr><td>AC field 76</td><td>Live room URL</td><td></td></tr>
+  <tr><td>AC automations</td><td>326 early, 731 late</td><td><code>sms_safe</code> only</td></tr>
+  <tr><td>Google Calendar</td><td>Attendee on one emoji event</td><td>Events created on the Webinar Creation sheet</td></tr>
+  <tr><td>Slack</td><td>Like LIVE registrant ping with SDR mention</td><td></td></tr>
+  <tr><td>Tracker sheet</td><td>New Lead / Old Lead row</td><td>Sink</td></tr>
+  <tr><td>SMS sheet</td><td>Phone only</td><td><code>sms_safe</code> only</td></tr>
+</table></div>
+
+<p class="dim">Close field IDs, sheet IDs and other builder identifiers are kept in the internal version of this page.</p>
+
+<h2 id="standup">Standing up a new replay date</h2>
+<p>Change the <b>hardcodes</b>. Do not clone the zap if you can avoid it — cloning is how we
+ended up with a dated copy per run. If you must clone, pause the old one in the same window.</p>
+<ol class="check">
+  <li><span class="n">1</span><div>Confirm EverWebinar #46 has the new Phoenix schedule.</div></li>
+  <li><span class="n">2</span><div>Create the five emoji events on <code>pace@subto.com</code> from the Webinar Creation sheet. Titles must match the five Find Event searches.</div></li>
+  <li><span class="n">3</span><div>Open <code>371023152</code> and update together: AC tags
+    (<code>{M/D/YY} Bigger Like Live Registrant</code> and the <code>(Email)</code> variant),
+    the five Find Event search terms and date window, and the SMS cutoff
+    (<code>{Month DD}, 12:30 pm</code> — 30 minutes before this run’s start).</div></li>
+  <li><span class="n">4</span><div>Test-register twice: a net-new email, and an email already in Close.
+    Confirm find-or-create reused the existing lead (no duplicate).</div></li>
+  <li><span class="n">5</span><div>Then check, in order: Close lead + <code>01. New Activity</code> →
+    AC tag + field 76 → exactly one calendar attendee → Slack ping → tracker row →
+    <code>sms_safe</code> on a real mobile → SMS sheet + automation 326 or 731.</div></li>
+  <li><span class="n">6</span><div>After the first live hour, group Close activities by Notes and AC tags
+    by the new date string. Confirm the date is in the text — no
+    <code>Like Live Registration</code> with a blank token.</div></li>
+</ol>
+
+<h2 id="break">If something breaks</h2>
+<div class="tbl"><table>
+  <tr><th>Symptom</th><th>Likely cause</th><th>Check</th></tr>
+  <tr><td>No calendar invite</td><td>Emoji events missing, title mismatch, or the date window</td><td>Webinar Creation sheet + <code>pace@subto.com</code>; Find Event queries</td></tr>
+  <tr><td>Two invites or two tags</td><td>Classic zap and the Next Gen draft both on</td><td>Draft stays disabled while <code>371023152</code> is on</td></tr>
+  <tr><td>Duplicate Close lead</td><td>Step is create-only, or email didn’t match</td><td>Must be find or create by email</td></tr>
+  <tr><td>No SDR / Slack has no owner</td><td>Roster Sub-Zap or the round-robin Code step</td><td>SDR Lead Owner on the lead</td></tr>
+  <tr><td>Old lead got a new SDR</td><td>Owner field empty when it should not be</td><td>SDR Lead Owner before the run</td></tr>
+  <tr><td>No SMS, everything else fine</td><td><code>sms_safe = false</code> or cutoff not updated</td><td>Carrier reason; cutoff vs Arizona now</td></tr>
+  <tr><td>SMS at the wrong time</td><td>Cutoff still <code>September 26, 12:30 pm</code></td><td>Hardcode for this run</td></tr>
+  <tr><td>Close Notes have no date</td><td>Webinar date parse failed</td><td>Trigger datetime → <code>MM/DD/YYYY</code> Arizona</td></tr>
+  <tr><td>Funnel? is <code>Like Live</code> not <code>Webinar Replay - …</code></td><td>Current contract</td><td>Expected until a Decision changes this zap</td></tr>
+</table></div>
+
+<h2 id="out">Out of scope</h2>
+<div class="brands">
+  <div class="brand"><h4>Other webinar types</h4><p class="dim">Live Zoom, AMAs, Fireside Chats, NOLB / Swoogo — different zaps.</p></div>
+  <div class="brand"><h4>Attendance outcomes</h4><p class="dim">Attendee, Non Attendee, Left Early, Saw CTA — staff update those in Close by hand after the replay.</p></div>
+  <div class="brand"><h4>Creating the emoji events</h4><p class="dim">Webinar Creation sheet, not this zap.</p></div>
+  <div class="brand"><h4>The SMS body</h4><p class="dim">Lives in ActiveCampaign automations 326 and 731.</p></div>
+  <div class="brand"><h4>Sister brands</h4><p class="dim">Gator, TC, and ZDB have twins — same shape, own AC, tags, emoji set, and zap ID.</p></div>
+</div>
+
+<p class="dim">Related: <a href="../webinar-new-activity-formats/">Webinar “01. New Activity” / Funnel? SOP</a>.</p>
+
+</main>
+
+<div id="toast">Copied</div>
+
+<script>
+  (function(){
+    var toast=document.getElementById('toast'),tm;
+    document.addEventListener('click',function(e){
+      var c=e.target.closest('code.copy');if(!c)return;
+      var text=c.textContent;
+      function done(){toast.textContent='Copied: '+text;toast.classList.add('show');
+        clearTimeout(tm);tm=setTimeout(function(){toast.classList.remove('show')},1400);}
+      if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(done,fallback);}
+      else fallback();
+      function fallback(){var t=document.createElement('textarea');t.value=text;document.body.appendChild(t);
+        t.select();try{document.execCommand('copy')}catch(_){}document.body.removeChild(t);done();}
+    });
+  })();
+</script>
+</body>
+</html>
