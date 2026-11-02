@@ -1,5 +1,6 @@
 /* Daily change log for the change calendar.
    Add a row when a Cursor session changes something the team should see.
+   actualImpact is the result Hailey wrote, including work finished by hand.
    Set needsReview to false and decision to "approved" when an entry is approved.
    Set decision to "rejected" to hide an entry. The page does not render those.
    Leave out work that was stopped or rejected before it landed. */

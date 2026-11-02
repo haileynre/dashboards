@@ -21,6 +21,9 @@ that window.
   approved. Approve on the page saves in that browser only. To make it stick
   for everyone, set `decision` to `"approved"` and `needsReview` to `false`.
   Reject sets `decision` to `"rejected"`. The page hides rejected rows.
+- **What actually happened** is a note on each entry for work finished by hand.
+  Typing saves in that browser. To keep it for everyone, set `actualImpact` on
+  the row.
 
 Stopped or rejected work is left off the calendar. For this first week that
 includes the lead-magnet SMS edit (October 28, never finished), the ClickFunnels
@@ -41,7 +44,8 @@ When asked for the day's update, append rows to `window.CHANGE_LOG` in
 | `status` | `live`, `draft`, `reviewed`, or `repo` |
 | `title` | Short, specific |
 | `change` | What was done, with counts |
-| `impacts` | What else can fire because of it |
+| `impacts` | Inferred downstream effect |
+| `actualImpact` | What actually happened, including hand-finished work. Optional |
 | `needsReview` | `true` until confirmed |
 | `links` | `{ label, href }` or `[]` |
 

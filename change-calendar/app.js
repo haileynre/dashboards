@@ -42,6 +42,7 @@
   });
   document.addEventListener("keydown", onKey);
   detail.addEventListener("click", onDetailClick);
+  detail.addEventListener("input", onDetailInput);
 
   labelTheme();
   buildFilters();
@@ -90,6 +91,20 @@
     if (row.decision === "approved" || row.decision === "rejected") return row.decision;
     var saved = readStore()[row.id];
     return saved && saved.decision ? saved.decision : "";
+  }
+
+  function actualFor(row) {
+    var saved = readStore()[row.id];
+    if (saved && Object.prototype.hasOwnProperty.call(saved, "actualImpact")) return saved.actualImpact;
+    return row.actualImpact || "";
+  }
+
+  function patchStore(id, patch) {
+    var store = readStore();
+    var current = store[id] || {};
+    Object.keys(patch).forEach(function (key) { current[key] = patch[key]; });
+    store[id] = current;
+    writeStore(store);
   }
 
   function isRejected(row) {
@@ -248,6 +263,12 @@
       html += rows.map(cardHtml).join("");
     }
     detail.innerHTML = html;
+    detail.querySelectorAll("textarea[data-note]").forEach(function (box) {
+      var id = box.getAttribute("data-note");
+      var row = null;
+      LOG.forEach(function (item) { if (item.id === id) row = item; });
+      if (row) box.value = actualFor(row);
+    });
   }
 
   function cardHtml(row) {
@@ -273,9 +294,11 @@
       "<h3>" + escapeHtml(row.title) + "</h3>" +
       "<div class=\"label\">What changed</div>" +
       "<p>" + escapeHtml(row.change) + "</p>" +
-      "<div class=\"label\">Downstream impact</div>" +
+      "<div class=\"label\">Inferred impact</div>" +
       "<div class=\"" + impactClass + "\"><span class=\"flag\">" + flag + "</span><p>" +
       escapeHtml(row.impacts) + "</p></div>" +
+      "<label class=\"label\" for=\"actual-" + escapeAttr(row.id) + "\">What actually happened</label>" +
+      "<textarea id=\"actual-" + escapeAttr(row.id) + "\" class=\"actual\" data-note=\"" + escapeAttr(row.id) + "\" rows=\"3\" placeholder=\"The part you finished by hand, and what it affected.\"></textarea>" +
       (links ? "<div class=\"links\">" + links + "</div>" : "") +
       "<div class=\"actions\">" +
       "<button type=\"button\" class=\"approve\" data-act=\"approved\" data-id=\"" + escapeAttr(row.id) + "\"" +
@@ -298,8 +321,12 @@
   function onDetailClick(event) {
     var undo = event.target.closest("[data-undo]");
     if (undo) {
+      var undoId = undo.getAttribute("data-undo");
       var cleared = readStore();
-      delete cleared[undo.getAttribute("data-undo")];
+      if (cleared[undoId]) {
+        delete cleared[undoId].decision;
+        if (!cleared[undoId].actualImpact) delete cleared[undoId];
+      }
       writeStore(cleared);
       pendingUndo = null;
       paint();
@@ -314,18 +341,22 @@
       return;
     }
     var id = btn.getAttribute("data-id");
-    var store = readStore();
-    store[id] = { decision: act, at: new Date().toISOString() };
-    writeStore(store);
+    patchStore(id, { decision: act, at: new Date().toISOString() });
     pendingUndo = act === "rejected" ? id : null;
     paint();
+  }
+
+  function onDetailInput(event) {
+    var box = event.target;
+    if (!box || !box.getAttribute || !box.getAttribute("data-note")) return;
+    patchStore(box.getAttribute("data-note"), { actualImpact: box.value });
   }
 
   function onKey(event) {
     var keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
     if (keys.indexOf(event.key) === -1) return;
     var focused = document.activeElement;
-    if (focused && (focused.tagName === "INPUT" || (focused.tagName === "BUTTON" && !focused.classList.contains("day")))) return;
+    if (focused && (focused.tagName === "INPUT" || focused.tagName === "TEXTAREA" || (focused.tagName === "BUTTON" && !focused.classList.contains("day")))) return;
     var step = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : event.key === "ArrowUp" ? -7 : 7;
     var next = parseIso(selected);
     next.setDate(next.getDate() + step);

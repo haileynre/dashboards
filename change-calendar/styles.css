@@ -277,6 +277,22 @@ button:focus-visible, .day:focus-visible {
 .actions .reject, .undo button { background: var(--paper); color: var(--clay); border-color: var(--line); }
 .actions button[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--sage); }
 .action-note { margin-top: 8px; color: var(--muted); font-size: 13px; }
+.actual {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 88px;
+}
+.actual:focus { outline: 3px solid var(--sage); outline-offset: 1px; }
+.actual::placeholder { color: var(--muted); }
 .undo {
   margin: 10px;
   padding: 12px 14px;
