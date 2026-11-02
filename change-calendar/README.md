@@ -22,8 +22,9 @@ that window.
   for everyone, set `decision` to `"approved"` and `needsReview` to `false`.
   Reject sets `decision` to `"rejected"`. The page hides rejected rows.
 - **What actually happened** is a note on each entry for work finished by hand.
-  Typing saves in that browser. To keep it for everyone, set `actualImpact` on
-  the row.
+  Typing saves in that browser. Approve tidies spacing, capitalization, and
+  common grammar in that note and keeps the original behind Restore my wording.
+  To keep it for everyone, set `actualImpact` on the row.
 
 Stopped or rejected work is left off the calendar. For this first week that
 includes the lead-magnet SMS edit (October 28, never finished), the ClickFunnels

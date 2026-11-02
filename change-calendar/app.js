@@ -102,9 +102,47 @@
   function patchStore(id, patch) {
     var store = readStore();
     var current = store[id] || {};
-    Object.keys(patch).forEach(function (key) { current[key] = patch[key]; });
-    store[id] = current;
+    Object.keys(patch).forEach(function (key) {
+      if (patch[key] === null) delete current[key];
+      else current[key] = patch[key];
+    });
+    if (!Object.keys(current).length) delete store[id];
+    else store[id] = current;
     writeStore(store);
+  }
+
+  function polishNote(text) {
+    var contractions = {
+      dont: "don't", doesnt: "doesn't", cant: "can't", wont: "won't",
+      didnt: "didn't", isnt: "isn't", wasnt: "wasn't", werent: "weren't",
+      arent: "aren't", hasnt: "hasn't", havent: "haven't", hadnt: "hadn't",
+      couldnt: "couldn't", wouldnt: "wouldn't", shouldnt: "shouldn't",
+      theyre: "they're", youre: "you're", thats: "that's", whats: "what's",
+      im: "I'm", ive: "I've", ill: "I'll"
+    };
+    var words = {
+      teh: "the", recieve: "receive", seperate: "separate", occured: "occurred",
+      untill: "until", wich: "which", becuase: "because", definately: "definitely",
+      alot: "a lot", wierd: "weird", tommorow: "tomorrow", sucess: "success"
+    };
+    var cleaned = String(text || "").replace(/\r\n/g, "\n").trim();
+    cleaned = cleaned.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+    cleaned = cleaned.replace(/[ \t]{2,}/g, " ");
+    cleaned = cleaned.replace(/\s+([,.;:!?])/g, "$1");
+    cleaned = cleaned.replace(/([,.;:!?])(?=[A-Za-z])/g, "$1 ");
+    cleaned = cleaned.replace(/([.!?]){2,}/g, "$1");
+    cleaned = cleaned.replace(/\b[a-z']+\b/gi, function (word) {
+      var lower = word.toLowerCase();
+      if (contractions[lower]) return contractions[lower];
+      if (words[lower]) return words[lower];
+      if (lower === "i") return "I";
+      return word;
+    });
+    cleaned = cleaned.replace(/(^|[.!?]\s+|\n+)([a-z])(?![0-9])/g, function (_, lead, letter) {
+      return lead + letter.toUpperCase();
+    });
+    if (cleaned && /[A-Za-z]/.test(cleaned) && !/[.!?…"']$/.test(cleaned)) cleaned += ".";
+    return cleaned;
   }
 
   function isRejected(row) {
@@ -299,6 +337,7 @@
       escapeHtml(row.impacts) + "</p></div>" +
       "<label class=\"label\" for=\"actual-" + escapeAttr(row.id) + "\">What actually happened</label>" +
       "<textarea id=\"actual-" + escapeAttr(row.id) + "\" class=\"actual\" data-note=\"" + escapeAttr(row.id) + "\" rows=\"3\" placeholder=\"The part you finished by hand, and what it affected.\"></textarea>" +
+      (wordingChanged(row) ? "<p class=\"action-note\">Cleaned the wording. <button type=\"button\" class=\"restore\" data-restore-wording=\"" + escapeAttr(row.id) + "\">Restore my wording</button></p>" : "") +
       (links ? "<div class=\"links\">" + links + "</div>" : "") +
       "<div class=\"actions\">" +
       "<button type=\"button\" class=\"approve\" data-act=\"approved\" data-id=\"" + escapeAttr(row.id) + "\"" +
@@ -307,6 +346,11 @@
       "</div>" +
       (fromBrowser ? "<p class=\"action-note\">Saved in this browser. Ask me to update the calendar when you want the team copy to match.</p>" : "") +
       "</article>";
+  }
+
+  function wordingChanged(row) {
+    var saved = readStore()[row.id];
+    return !!(saved && typeof saved.actualImpactRaw === "string" && saved.actualImpact !== saved.actualImpactRaw);
   }
 
   function undoBanner() {
@@ -319,6 +363,16 @@
   }
 
   function onDetailClick(event) {
+    var restore = event.target.closest("[data-restore-wording]");
+    if (restore) {
+      var restoreId = restore.getAttribute("data-restore-wording");
+      var savedNote = readStore()[restoreId];
+      if (savedNote && typeof savedNote.actualImpactRaw === "string") {
+        patchStore(restoreId, { actualImpact: savedNote.actualImpactRaw, actualImpactRaw: null });
+      }
+      paint();
+      return;
+    }
     var undo = event.target.closest("[data-undo]");
     if (undo) {
       var undoId = undo.getAttribute("data-undo");
@@ -341,7 +395,15 @@
       return;
     }
     var id = btn.getAttribute("data-id");
-    patchStore(id, { decision: act, at: new Date().toISOString() });
+    var patch = { decision: act, at: new Date().toISOString() };
+    if (act === "approved") {
+      var box = detail.querySelector("textarea[data-note=\"" + id + "\"]");
+      var raw = box ? box.value : "";
+      var polished = polishNote(raw);
+      patch.actualImpact = polished;
+      patch.actualImpactRaw = polished === raw ? null : raw;
+    }
+    patchStore(id, patch);
     pendingUndo = act === "rejected" ? id : null;
     paint();
   }
