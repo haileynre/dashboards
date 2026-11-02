@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Change calendar</title>
+<script>
+  (function () {
+    var t;
+    try { t = localStorage.getItem("nre-change-theme"); } catch (e) {}
+    document.documentElement.setAttribute("data-theme", t || "light");
+  })();
+</script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#day-detail">Skip to the selected day</a>
+<header class="top">
+  <div class="top-in">
+    <div>
+      <p class="eyebrow">New Reach · Cursor</p>
+      <h1>Change calendar</h1>
+    </div>
+    <button type="button" id="theme-btn" class="ghost">Dark mode</button>
+  </div>
+  <p class="lede">What changed from day to day, which platform it touched, and what else might have felt it. Impact notes are inferred and stay marked until they are confirmed.</p>
+</header>
+
+<main class="wrap">
+  <section class="summary" id="summary" aria-label="Log summary"></section>
+
+  <div class="filters" id="filters" role="toolbar" aria-label="Filter by platform"></div>
+
+  <div class="layout">
+    <section class="cal-card" aria-labelledby="month-label">
+      <div class="cal-head">
+        <button type="button" class="ghost icon" id="prev-month" aria-label="Previous month">‹</button>
+        <h2 id="month-label"></h2>
+        <button type="button" class="ghost icon" id="next-month" aria-label="Next month">›</button>
+      </div>
+      <div class="weekdays" aria-hidden="true">
+        <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+      </div>
+      <div class="grid" id="grid"></div>
+      <p class="hint">Arrow keys move between days. Days with no dot had nothing logged.</p>
+    </section>
+
+    <section class="detail" id="day-detail" aria-live="polite"></section>
+  </div>
+</main>
+
+<footer class="foot">
+  <p>Logged from Cursor sessions, October 27 through November 2, 2026. Approve confirms an entry. Reject hides it. Both stay in this browser until the decision is committed to the repo.</p>
+</footer>
+
+<script src="changes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
