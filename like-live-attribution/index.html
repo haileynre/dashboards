@@ -23,7 +23,7 @@
     font: 15px/1.45 "Avenir Next", "Segoe UI", sans-serif;
     padding: 28px 20px 64px;
   }
-  .wrap { max-width: 980px; margin: 0 auto; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
   .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 8px; }
   h1 {
     font-family: "Iowan Old Style", Palatino, Georgia, serif;
@@ -31,7 +31,7 @@
   }
   .lede { max-width: 68ch; margin: 0 0 8px; font-size: 17px; }
   .fine { color: var(--muted); font-size: 13px; margin: 0 0 22px; }
-  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
   a.card {
     display: block; text-decoration: none; color: inherit; background: var(--card);
     border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 16px;
@@ -54,7 +54,7 @@
   <p class="eyebrow">New Reach · Like-live</p>
   <h1>Like-live sales attribution</h1>
   <p class="lede">Each brand page compares that brand’s EverWebinar registrations with Close leads who moved to Signed Up within 7 days of watching, live or on replay.</p>
-  <p class="fine">Snapshot November 9, 2026. Names and contact details stay off these pages. Subto, Gator, Deal Scout, and Prop.ai get their own pages next.</p>
+  <p class="fine">Snapshot November 9, 2026. Names and contact details stay off these pages. Subto, Gator, and Prop.ai get their own pages next.</p>
   <div class="cards">
     <a class="card" href="/tc-like-live-attribution/">
       <div class="brand">Top Tier · webinar 49</div>
@@ -80,12 +80,23 @@
       <p class="note">2026 sessions, May 14 – Nov 10. East webinar #53 is not included.</p>
       <div class="open">Open the Zero Down page</div>
     </a>
+    <a class="card" href="/ds-like-live-attribution/">
+      <div class="brand">Deal Scout · webinar 54</div>
+      <h2>Deal Scout Like-live</h2>
+      <dl>
+        <div><dt>Registered</dt><dd>848</dd></div>
+        <div><dt>Attended</dt><dd>288 · 34.0%</dd></div>
+        <div><dt>Purchases</dt><dd>6 · 2.1%</dd></div>
+        <div><dt>Best session</dt><dd>Oct 21 · 3.4%</dd></div>
+      </dl>
+      <p class="note">2026 sessions, Oct 14 – Oct 30.</p>
+      <div class="open">Open the Deal Scout page</div>
+    </a>
   </div>
   <h3>Still to build</h3>
   <ul>
     <li>Subto LIKE-LIVE (#46)</li>
     <li>Gator LIKE-LIVE (#47)</li>
-    <li>Deal Scout LIKE-LIVE (#54)</li>
     <li>Prop.ai Man vs. Machine Day 1 (#40) and Day 2 (#43)</li>
   </ul>
 </div>

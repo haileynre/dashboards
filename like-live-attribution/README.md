@@ -8,5 +8,5 @@ Signed Up within 7 days of a live or replay view.
 
 https://haileynre.github.io/like-live-attribution/
 
-Top Tier and Zero Down are live. Subto, Gator, Deal Scout, and Prop.ai are not
-built yet.
+Top Tier, Zero Down, and Deal Scout are live. Subto, Gator, and Prop.ai are
+not built yet.
