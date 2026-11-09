@@ -5,12 +5,10 @@ Signed Up within 7 days of watching. Snapshot of November 9, 2026.
 
 ## Open it
 
-Double-click `index.html`. One file, no build step, no server, no login, and
-no network calls. Names, emails, and phone numbers are not in the page.
+https://haileynre.github.io/tc-like-live-attribution/
 
-The repo is private. GitHub's file view will not run the page, and publishing
-it with GitHub Pages would put the ad results on the public internet. Open the
-file locally, or share the repo with the people who should see it.
+Or double-click `index.html`. One file, no build step, no server, no login,
+and no network calls. Names, emails, and phone numbers are not in the page.
 
 ## What you can do on the page
 
