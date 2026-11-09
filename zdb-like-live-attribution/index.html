@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zero Down Webinar Attribution</title>
+<style>
+  :root {
+    --bg: #f4efe4;
+    --card: #fffcf6;
+    --ink: #1e1a16;
+    --muted: #6f675d;
+    --line: #e3dac8;
+    --purple: #5b3df0;
+    --purple-soft: #ddd6ff;
+    --attended: #2c1a78;
+    --shadow: 0 1px 0 rgba(40, 30, 10, 0.04);
+    --chip: #efe8d8;
+    --chip-on: #2c1a78;
+    --chip-on-text: #fff;
+    --bar-track: transparent;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141210;
+      --card: #1e1b17;
+      --ink: #f4efe6;
+      --muted: #b3a89a;
+      --line: #3a342c;
+      --purple: #9b8cff;
+      --purple-soft: #3a2f72;
+      --attended: #d9d0ff;
+      --shadow: none;
+      --chip: #2a261f;
+      --chip-on: #d9d0ff;
+      --chip-on-text: #1a1333;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141210;
+    --card: #1e1b17;
+    --ink: #f4efe6;
+    --muted: #b3a89a;
+    --line: #3a342c;
+    --purple: #9b8cff;
+    --purple-soft: #3a2f72;
+    --attended: #d9d0ff;
+    --shadow: none;
+    --chip: #2a261f;
+    --chip-on: #d9d0ff;
+    --chip-on-text: #1a1333;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.45 "Avenir Next", "Segoe UI", sans-serif;
+    padding: 28px 20px 64px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  .top {
+    display: flex; justify-content: space-between; gap: 16px; align-items: flex-start;
+  }
+  .eyebrow {
+    font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin: 0 0 8px;
+  }
+  h1 {
+    font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+    font-size: 40px; line-height: 1.05; font-weight: 600; margin: 0 0 12px; letter-spacing: -0.02em;
+  }
+  .lede { max-width: 68ch; margin: 0 0 8px; font-size: 17px; }
+  .fine { color: var(--muted); font-size: 13px; margin: 0; }
+  .theme { display: flex; background: var(--chip); border-radius: 999px; padding: 3px; gap: 2px; }
+  .theme button {
+    border: 0; background: transparent; color: var(--ink); border-radius: 999px;
+    padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .theme button[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-text); }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 22px 0 28px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px 16px 16px; box-shadow: var(--shadow);
+  }
+  .card .k { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .card .v {
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    font-size: 36px; margin: 4px 0 2px; letter-spacing: -0.03em;
+  }
+  .card .s { color: var(--muted); font-size: 13px; }
+  section { margin: 28px 0; }
+  h2 { font-size: 18px; margin: 0 0 6px; }
+  .explain { color: var(--muted); font-size: 13.5px; max-width: 78ch; margin: 0 0 14px; }
+  .legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .swatch.reg { background: var(--purple-soft); }
+  .swatch.att { background: var(--purple); }
+  .session {
+    display: grid; grid-template-columns: 168px 1fr 168px; gap: 10px; align-items: center;
+    padding: 4px 0; position: relative;
+  }
+  .session .name { font-size: 13.5px; }
+  .track { height: 16px; background: var(--bar-track); border-radius: 4px; position: relative; }
+  .bar {
+    height: 16px; border-radius: 4px; background: var(--purple-soft); position: relative; min-width: 0;
+  }
+  .bar > span {
+    display: block; height: 16px; border-radius: 4px 0 0 4px; background: var(--purple);
+  }
+  .bar > span.full { border-radius: 4px; }
+  .session .meta { font-size: 13px; color: var(--muted); text-align: right; }
+  .session:hover .name, .session:focus-within .name { color: var(--purple); }
+  .tip {
+    position: absolute; z-index: 2; left: 180px; top: 24px;
+    background: var(--ink); color: var(--bg); font-size: 12.5px; padding: 8px 10px;
+    border-radius: 8px; pointer-events: none; white-space: nowrap; display: none;
+  }
+  .session:hover .tip, .session:focus-within .tip { display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  button.linkish {
+    border: 0; background: none; font: inherit; color: inherit; padding: 0; cursor: pointer; text-align: right;
+  }
+  th button.linkish { color: var(--muted); font-size: 12px; font-weight: 600; }
+  th button.linkish[aria-sort] { color: var(--ink); }
+  .ratebar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+  .ratebar i {
+    display: block; height: 8px; border-radius: 99px; background: var(--purple); min-width: 2px;
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 4px; align-items: end; }
+  label.ctl { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 600; }
+  select, input[type="search"] {
+    font: inherit; font-size: 14px; color: var(--ink); background: var(--card);
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 160px;
+  }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .hrow { display: grid; grid-template-columns: 110px 1fr 52px; gap: 8px; align-items: center; margin: 7px 0; }
+  .hrow .lab { font-size: 13.5px; }
+  .htrack { background: var(--chip); border-radius: 4px; height: 14px; }
+  .hfill { height: 14px; border-radius: 4px; background: var(--purple); }
+  .hrow .pct { text-align: right; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+  .weeks { display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-top: 8px; }
+  .week { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; min-width: 0; }
+  .week b {
+    display: block; width: 100%; max-width: 28px; background: var(--purple); border-radius: 4px 4px 0 0; min-height: 0;
+  }
+  .week span { font-size: 10px; color: var(--muted); margin-top: 6px; writing-mode: horizontal-tb; white-space: nowrap; }
+  .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+  details { margin-top: 28px; }
+  summary { cursor: pointer; font-weight: 650; }
+  details p, details li { color: var(--muted); }
+  details ul { margin: 8px 0 0; padding-left: 18px; }
+  .namecell { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 860px) {
+    .cards, .split { grid-template-columns: 1fr 1fr; }
+    .session { grid-template-columns: 1fr; gap: 2px; margin-bottom: 8px; }
+    .session .meta { text-align: left; }
+    .tip { left: 0; }
+    h1 { font-size: 32px; }
+  }
+  @media (max-width: 560px) {
+    .cards { grid-template-columns: 1fr; }
+    .top { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <p class="eyebrow">Zero Down · ZDB Like-live</p>
+      <h1>Zero Down Webinar Attribution</h1>
+      <p class="lede" id="lede"></p>
+      <p class="fine" id="fine"></p>
+    </div>
+    <div class="theme" role="group" aria-label="Color theme">
+      <button type="button" data-theme="auto" aria-pressed="true">Auto</button>
+      <button type="button" data-theme="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <section>
+    <h2>How each session performed</h2>
+    <p class="explain">Bars show registrations. The darker portion is who showed up live or on replay. The label on the right is purchases, and the share of attendees who purchased. Point at a bar for the full count. June 30 and November 10 are on the chart with no signups yet.</p>
+    <div class="legend"><span><i class="swatch reg"></i>Registered</span><span><i class="swatch att"></i>Attended</span></div>
+    <div id="sessions"></div>
+    <div class="scroll" style="margin-top:14px">
+      <table id="session-table">
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th class="num"><button class="linkish" type="button" data-sort="registered">Registered</button></th>
+            <th class="num"><button class="linkish" type="button" data-sort="attended">Attended</button></th>
+            <th class="num"><button class="linkish" type="button" data-sort="attendRate">Attend rate</button></th>
+            <th class="num"><button class="linkish" type="button" data-sort="purchases">Purchases</button></th>
+            <th class="num"><button class="linkish" type="button" data-sort="purchaseRate">Purchase rate</button></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Which traffic sources and ads convert</h2>
+    <p class="explain">Pick a level to compare. Each webinar purchase sits on the registration where it is attributed, so purchases add up to the total above. Ad creative is the UTM content tag.</p>
+    <div class="controls">
+      <label class="ctl">Compare by
+        <select id="level"><option>Channel</option><option>Campaign</option><option>Ad creative</option></select>
+      </label>
+      <label class="ctl">Sort by
+        <select id="sort">
+          <option value="purchases">Purchases</option>
+          <option value="purchaseRate">Purchase rate</option>
+          <option value="registered">Registered</option>
+          <option value="attended">Attended</option>
+          <option value="attendRate">Attend rate</option>
+          <option value="name">Name</option>
+        </select>
+      </label>
+      <label class="ctl">Show
+        <select id="limit"><option value="0">All rows</option><option value="10">Top 10</option><option value="25">Top 25</option></select>
+      </label>
+    </div>
+    <div class="scroll">
+      <table id="source-table">
+        <thead>
+          <tr>
+            <th id="source-name">Channel</th>
+            <th class="num">Registered</th>
+            <th class="num">Attended</th>
+            <th class="num">Attend rate</th>
+            <th class="num">Purchases</th>
+            <th class="num">Purchase rate</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="split">
+    <section>
+      <h2>Longer viewers buy more</h2>
+      <p class="explain">Share of attendees who purchased, by total minutes watched.</p>
+      <div id="watch"></div>
+    </section>
+    <section>
+      <h2>When people register vs. whether they show</h2>
+      <p class="explain">Attend rate by how many days before the session someone registered.</p>
+      <div id="lead"></div>
+    </section>
+  </div>
+
+  <section>
+    <h2>Registrations by week</h2>
+    <p class="explain">Weeks start on Monday. Hover a bar for the count.</p>
+    <div class="weeks" id="weeks"></div>
+  </section>
+
+  <section>
+    <h2>Webinar buyers</h2>
+    <p class="explain">The purchases attributed to a session, in the order they bought. Names and contact details are not included.</p>
+    <div class="controls">
+      <label class="ctl">Filter
+        <input id="buyer-filter" type="search" placeholder="Session, channel, campaign">
+      </label>
+    </div>
+    <div class="scroll">
+      <table id="buyers">
+        <thead>
+          <tr>
+            <th>Buyer</th><th>Purchased</th><th>Session</th>
+            <th class="num">Minutes watched</th><th>Channel</th><th>Campaign</th><th>Ad creative</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <details>
+    <summary>How these numbers are counted</summary>
+    <ul>
+      <li>EverWebinar ZDB LIKE-LIVE (#48) for 2026: every registration on the scheduled sessions from May 14 through November 10, the direct-link room, and one signup WebinarJam left unscheduled. June 30 and November 10 had no signups.</li>
+      <li>A person is one email address. The registration total counts every signup, so the same person can be in more than one session.</li>
+      <li>Attended means WebinarJam marked them present live or on the replay.</li>
+      <li>A purchase is a Zero Down Close lead moved to Signed Up within 7 days after that view, matched on email. It is credited to the session they watched most recently before they bought.</li>
+      <li>Minutes are the time WebinarJam recorded. The watch-time chart uses each attendee’s total across their views.</li>
+      <li>Channel comes from the registration UTM. Email is medium = email. No UTM is a blank source and medium. Google ads is source google or DG. The rest of this account is Meta: Facebook, Instagram, Audience Network, and Threads.</li>
+      <li>Campaign is utm_campaign. Ad creative is utm_content. Blank tags show as (none).</li>
+      <li>Counted November 9, 2026. This page is a snapshot, not a live feed.</li>
+    </ul>
+  </details>
+</div>
+<script id="data" type="application/json">{"asOf":"November 9, 2026","rangeLabel":"2026, May 14 \u2013 Nov 10","kpis":{"registrations":2505,"people":2318,"attended":868,"attendRate":0.3744607420189819,"purchases":5,"purchaseOfAttendees":0.00576036866359447,"purchaseOfRegistrants":0.0021570319240724763,"bestSession":"Mon Aug 24, 4 PM","bestRate":0.012987012987012988},"sessions":[{"name":"Thu May 14, 4 PM","registered":865,"attended":231,"purchases":1,"sort":"2026-05-14","attendRate":0.26705202312138726,"purchaseRate":0.004329004329004329},{"name":"Tue Jun 30, 4 PM","registered":0,"attended":0,"purchases":0,"sort":"2026-06-30","attendRate":0,"purchaseRate":0},{"name":"Thu Aug 13, 4 PM","registered":393,"attended":96,"purchases":1,"sort":"2026-08-13","attendRate":0.24427480916030533,"purchaseRate":0.010416666666666666},{"name":"Mon Aug 24, 4 PM","registered":269,"attended":77,"purchases":1,"sort":"2026-08-24","attendRate":0.2862453531598513,"purchaseRate":0.012987012987012988},{"name":"Mon Sep 21, 4 PM","registered":253,"attended":40,"purchases":0,"sort":"2026-09-21","attendRate":0.15810276679841898,"purchaseRate":0.0},{"name":"Thu Sep 24, 4 PM","registered":249,"attended":63,"purchases":0,"sort":"2026-09-24","attendRate":0.25301204819277107,"purchaseRate":0.0},{"name":"Tue Oct 13, 4 PM","registered":9,"attended":2,"purchases":0,"sort":"2026-10-13","attendRate":0.2222222222222222,"purchaseRate":0.0},{"name":"Mon Oct 19, 4 PM","registered":6,"attended":3,"purchases":0,"sort":"2026-10-19","attendRate":0.5,"purchaseRate":0.0},{"name":"Mon Oct 26, 4 PM","registered":49,"attended":11,"purchases":0,"sort":"2026-10-26","attendRate":0.22448979591836735,"purchaseRate":0.0},{"name":"Tue Nov 10, 4 PM","registered":0,"attended":0,"purchases":0,"sort":"2026-11-10","attendRate":0,"purchaseRate":0},{"name":"Unscheduled","registered":1,"attended":0,"purchases":0,"sort":"9998-99-99","attendRate":0.0,"purchaseRate":0},{"name":"On-demand (direct link)","registered":411,"attended":404,"purchases":2,"sort":"9999-99-99","attendRate":0.9829683698296837,"purchaseRate":0.0049504950495049506}],"sources":{"Channel":[{"name":"Meta ads","registered":1003,"attended":185,"purchases":2,"attendRate":0.18444666001994017,"purchaseRate":0.010810810810810811},{"name":"No UTM","registered":912,"attended":356,"purchases":1,"attendRate":0.39035087719298245,"purchaseRate":0.0028089887640449437},{"name":"Email","registered":590,"attended":386,"purchases":2,"attendRate":0.6542372881355932,"purchaseRate":0.0051813471502590676}],"Campaign":[{"name":"[9/24/26] ZDB | LL | FB","registered":43,"attended":8,"purchases":0,"attendRate":0.18604651162790697,"purchaseRate":0.0},{"name":"(none)","registered":491,"attended":234,"purchases":0,"attendRate":0.47657841140529533,"purchaseRate":0.0},{"name":"9/24/26_zdb_ll","registered":89,"attended":23,"purchases":0,"attendRate":0.25842696629213485,"purchaseRate":0.0},{"name":"10/19/26_zdb_ll","registered":5,"attended":3,"purchases":0,"attendRate":0.6,"purchaseRate":0.0},{"name":"10/13/26_zdb_replay","registered":4,"attended":1,"purchases":0,"attendRate":0.25,"purchaseRate":0.0},{"name":"9/24/26_zdb_ll_direct","registered":50,"attended":22,"purchases":0,"attendRate":0.44,"purchaseRate":0.0},{"name":"[No Date] ZDB | LL | FB","registered":73,"attended":9,"purchases":0,"attendRate":0.1232876712328767,"purchaseRate":0.0},{"name":"[9/21/26] ZDB | LL | FB","registered":80,"attended":9,"purchases":0,"attendRate":0.1125,"purchaseRate":0.0},{"name":"9/21/26zdb_ll","registered":73,"attended":12,"purchases":0,"attendRate":0.1643835616438356,"purchaseRate":0.0},{"name":"[8/24] ZDB | LL | FB","registered":233,"attended":62,"purchases":1,"attendRate":0.26609442060085836,"purchaseRate":0.016129032258064516},{"name":"8/13/26-zdb-workshop","registered":74,"attended":33,"purchases":0,"attendRate":0.44594594594594594,"purchaseRate":0.0},{"name":"[8/13] ZDB | LL | FB","registered":267,"attended":48,"purchases":1,"attendRate":0.1797752808988764,"purchaseRate":0.020833333333333332},{"name":"8/18/26-zdb-recruit","registered":1,"attended":0,"purchases":0,"attendRate":0.0,"purchaseRate":0},{"name":"Zero down 6/9 confirmation email","registered":2,"attended":2,"purchases":0,"attendRate":1.0,"purchaseRate":0.0},{"name":"4/29 ZDB Reminder 15 min AFTER (Copy)","registered":90,"attended":89,"purchases":1,"attendRate":0.9888888888888889,"purchaseRate":0.011235955056179775},{"name":"4/29 ZDB Reminder 1 hour (Copy)","registered":40,"attended":39,"purchases":0,"attendRate":0.975,"purchaseRate":0.0},{"name":"Zero down 5/26 - 28/26 confirmation email","registered":1,"attended":1,"purchases":0,"attendRate":1.0,"purchaseRate":0.0},{"name":"4/29 ZDB Reminder 15 min (Copy)","registered":97,"attended":97,"purchases":1,"attendRate":1.0,"purchaseRate":0.010309278350515464},{"name":"Zero down 5/14/26 confirmation email","registered":64,"attended":64,"purchases":0,"attendRate":1.0,"purchaseRate":0.0},{"name":"4/29 ZDB Recruitment Email","registered":501,"attended":145,"purchases":1,"attendRate":0.2894211576846307,"purchaseRate":0.006896551724137931},{"name":"[LIKE-LIVE] ZDB | FB","registered":227,"attended":26,"purchases":0,"attendRate":0.1145374449339207,"purchaseRate":0.0}],"Ad creative":[{"name":"Static | Flex: 6 Images [9/21 Date]","registered":116,"attended":17,"purchases":0,"attendRate":0.14655172413793102,"purchaseRate":0.0},{"name":"(none)","registered":992,"attended":379,"purchases":1,"attendRate":0.38205645161290325,"purchaseRate":0.002638522427440633},{"name":"email_1","registered":296,"attended":94,"purchases":0,"attendRate":0.31756756756756754,"purchaseRate":0.0},{"name":"Static | Flex: 6 Images","registered":233,"attended":52,"purchases":1,"attendRate":0.22317596566523606,"purchaseRate":0.019230769230769232},{"name":"Static | Dream Businesses v1","registered":92,"attended":21,"purchases":0,"attendRate":0.22826086956521738,"purchaseRate":0.0},{"name":"Static | Buy Businesses v1 - Copy","registered":77,"attended":13,"purchases":0,"attendRate":0.16883116883116883,"purchaseRate":0.0},{"name":"Static | Buy Businesses v2","registered":21,"attended":6,"purchases":0,"attendRate":0.2857142857142857,"purchaseRate":0.0},{"name":"Static | Buy Businesses v1","registered":111,"attended":19,"purchases":1,"attendRate":0.17117117117117117,"purchaseRate":0.05263157894736842},{"name":"Static | Buy Businesses v2   2ai - Copy","registered":27,"attended":4,"purchases":0,"attendRate":0.14814814814814814,"purchaseRate":0.0},{"name":"Static | Buy Businesses v2 - Copy","registered":2,"attended":0,"purchases":0,"attendRate":0.0,"purchaseRate":0},{"name":"Static | Dream Businesses v2","registered":5,"attended":1,"purchases":0,"attendRate":0.2,"purchaseRate":0.0},{"name":"Static | Dream Businesses v1 - Copy","registered":6,"attended":2,"purchases":0,"attendRate":0.3333333333333333,"purchaseRate":0.0},{"name":"Static | Dream Businesses v2 - Copy","registered":6,"attended":1,"purchases":0,"attendRate":0.16666666666666666,"purchaseRate":0.0},{"name":"Welcome to the Zero Down Business Training!","registered":67,"attended":67,"purchases":0,"attendRate":1.0,"purchaseRate":0.0},{"name":"I m trying to stall for you","registered":90,"attended":89,"purchases":1,"attendRate":0.9888888888888889,"purchaseRate":0.011235955056179775},{"name":"1 hour till your second step","registered":40,"attended":39,"purchases":0,"attendRate":0.975,"purchaseRate":0.0},{"name":"Have you joined yet?","registered":97,"attended":97,"purchases":1,"attendRate":1.0,"purchaseRate":0.010309278350515464},{"name":"Video: Can You Quit Your Job","registered":146,"attended":15,"purchases":0,"attendRate":0.10273972602739725,"purchaseRate":0.0},{"name":"Video: Absolutely","registered":78,"attended":11,"purchases":0,"attendRate":0.14102564102564102,"purchaseRate":0.0},{"name":"Video: CF Isn't Just For RE","registered":3,"attended":0,"purchases":0,"attendRate":0.0,"purchaseRate":0}]},"watch":[{"name":"Under 15 min","attended":497,"purchases":2,"rate":0.004024144869215292},{"name":"15\u201330 min","attended":56,"purchases":0,"rate":0.0},{"name":"30\u201360 min","attended":268,"purchases":3,"rate":0.011194029850746268},{"name":"60\u201390 min","attended":41,"purchases":0,"rate":0.0},{"name":"90+ min","attended":6,"purchases":0,"rate":0.0}],"lead":[{"name":"Same day","registered":1044,"attended":259,"rate":0.24808429118773948},{"name":"1\u20132 days","registered":568,"attended":148,"rate":0.2605633802816901},{"name":"3\u20136 days","registered":471,"attended":113,"rate":0.23991507430997877},{"name":"7\u201313 days","registered":6,"attended":0,"rate":0.0},{"name":"14+ days","registered":0,"attended":0,"rate":0}],"weeks":[{"label":"May 4","count":168,"sort":"2026-05-04"},{"label":"May 11","count":997,"sort":"2026-05-11"},{"label":"May 18","count":11,"sort":"2026-05-18"},{"label":"May 25","count":6,"sort":"2026-05-25"},{"label":"Jun 1","count":2,"sort":"2026-06-01"},{"label":"Jun 8","count":1,"sort":"2026-06-08"},{"label":"Jun 15","count":1,"sort":"2026-06-15"},{"label":"Jun 22","count":2,"sort":"2026-06-22"},{"label":"Jun 29","count":0,"sort":"2026-06-29"},{"label":"Jul 6","count":0,"sort":"2026-07-06"},{"label":"Jul 13","count":0,"sort":"2026-07-13"},{"label":"Jul 20","count":0,"sort":"2026-07-20"},{"label":"Jul 27","count":0,"sort":"2026-07-27"},{"label":"Aug 3","count":2,"sort":"2026-08-03"},{"label":"Aug 10","count":398,"sort":"2026-08-10"},{"label":"Aug 17","count":25,"sort":"2026-08-17"},{"label":"Aug 24","count":238,"sort":"2026-08-24"},{"label":"Aug 31","count":0,"sort":"2026-08-31"},{"label":"Sep 7","count":0,"sort":"2026-09-07"},{"label":"Sep 14","count":154,"sort":"2026-09-14"},{"label":"Sep 21","count":433,"sort":"2026-09-21"},{"label":"Sep 28","count":1,"sort":"2026-09-28"},{"label":"Oct 5","count":8,"sort":"2026-10-05"},{"label":"Oct 12","count":9,"sort":"2026-10-12"},{"label":"Oct 19","count":14,"sort":"2026-10-19"},{"label":"Oct 26","count":35,"sort":"2026-10-26"}],"buyers":[{"buyer":"Buyer 01","purchased":"May 14, 2026","purchasedSort":"2026-05-14","session":"On-demand (direct link)","minutes":55,"channel":"Email","campaign":"4/29 ZDB Reminder 15 min AFTER (Copy)","creative":"I m trying to stall for you"},{"buyer":"Buyer 02","purchased":"May 15, 2026","purchasedSort":"2026-05-15","session":"On-demand (direct link)","minutes":54,"channel":"Email","campaign":"4/29 ZDB Reminder 15 min (Copy)","creative":"Have you joined yet?"},{"buyer":"Buyer 03","purchased":"May 15, 2026","purchasedSort":"2026-05-15","session":"Thu May 14, 4 PM","minutes":36,"channel":"No UTM","campaign":"4/29 ZDB Recruitment Email","creative":"(none)"},{"buyer":"Buyer 04","purchased":"Aug 13, 2026","purchasedSort":"2026-08-13","session":"Thu Aug 13, 4 PM","minutes":0,"channel":"Meta ads","campaign":"[8/13] ZDB | LL | FB","creative":"Static | Buy Businesses v1"},{"buyer":"Buyer 05","purchased":"Aug 31, 2026","purchasedSort":"2026-08-31","session":"Mon Aug 24, 4 PM","minutes":0,"channel":"Meta ads","campaign":"[8/24] ZDB | LL | FB","creative":"Static | Flex: 6 Images"}]}</script>
+<script>
+const DATA = JSON.parse(document.getElementById("data").textContent);
+const pct = n => (n * 100).toFixed(1) + "%";
+const num = n => Number(n).toLocaleString("en-US");
+
+function lede() {
+  const k = DATA.kpis;
+  document.getElementById("lede").textContent =
+    `${num(k.people)} people registered for the ZDB Like-live webinar. ${pct(k.attendRate)} of them showed up live or on replay, and ${num(k.purchases)} purchased within 7 days of watching. The best-converting session was ${k.bestSession}, where ${pct(k.bestRate)} of attendees bought.`;
+  document.getElementById("fine").textContent =
+    `Webinar sessions ${DATA.rangeLabel}. Purchases count only those attributed to the webinar (bought within 7 days of viewing). Personal details removed. Snapshot ${DATA.asOf}.`;
+}
+
+function cards() {
+  const k = DATA.kpis;
+  const items = [
+    ["Registered", num(k.people), `unique people, from ${num(k.registrations)} registrations`],
+    ["Attended", num(k.attended), `${pct(k.attendRate)} of registrants, live or replay`],
+    ["Webinar purchases", num(k.purchases), `${pct(k.purchaseOfAttendees)} of attendees`],
+    ["Registrant to purchase", pct(k.purchaseOfRegistrants), "of everyone who registered"],
+  ];
+  document.getElementById("cards").innerHTML = items.map(([kabel, v, s]) =>
+    `<article class="card"><div class="k">${kabel}</div><div class="v">${v}</div><div class="s">${s}</div></article>`).join("");
+}
+
+function sessions() {
+  const max = Math.max(...DATA.sessions.map(s => s.registered));
+  document.getElementById("sessions").innerHTML = DATA.sessions.map(s => {
+    const width = s.registered ? Math.max(0.8, s.registered / max * 100) : 0;
+    const inner = s.registered ? (s.attended / s.registered * 100) : 0;
+    const full = inner >= 99.5 ? " full" : "";
+    const right = `${num(s.purchases)} purchase${s.purchases === 1 ? "" : "s"} · ${pct(s.purchaseRate)}`;
+    return `<div class="session" tabindex="0">
+      <div class="name">${s.name}</div>
+      <div class="track"><div class="bar" style="width:${width}%"><span class="${full}" style="width:${inner}%"></span></div></div>
+      <div class="meta">${right}</div>
+      <div class="tip">${num(s.registered)} registered · ${num(s.attended)} attended (${pct(s.attendRate)}) · ${right}</div>
+    </div>`;
+  }).join("");
+}
+
+let sessionSort = { key: "sort", dir: 1 };
+function renderSessionTable() {
+  const rows = DATA.sessions.slice();
+  const {key, dir} = sessionSort;
+  rows.sort((a, b) => {
+    const av = a[key], bv = b[key];
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return a.sort < b.sort ? -1 : 1;
+  });
+  document.querySelector("#session-table tbody").innerHTML = rows.map(s => `<tr>
+    <td>${s.name}</td>
+    <td class="num">${num(s.registered)}</td>
+    <td class="num">${num(s.attended)}</td>
+    <td class="num">${pct(s.attendRate)}</td>
+    <td class="num">${num(s.purchases)}</td>
+    <td class="num"><span class="ratebar"><i style="width:${Math.max(2, s.purchaseRate * 900)}px"></i>${pct(s.purchaseRate)}</span></td>
+  </tr>`).join("");
+  document.querySelectorAll("#session-table th button").forEach(btn => {
+    btn.removeAttribute("aria-sort");
+    if (btn.dataset.sort === key) btn.setAttribute("aria-sort", dir === 1 ? "ascending" : "descending");
+  });
+}
+
+function sourceRows() {
+  const level = document.getElementById("level").value;
+  const sort = document.getElementById("sort").value;
+  const limit = Number(document.getElementById("limit").value);
+  let rows = DATA.sources[level].slice();
+  rows.sort((a, b) => {
+    if (sort === "name") return a.name.localeCompare(b.name);
+    return (b[sort] - a[sort]) || b.registered - a.registered || a.name.localeCompare(b.name);
+  });
+  if (limit) rows = rows.slice(0, limit);
+  document.getElementById("source-name").textContent = level;
+  document.querySelector("#source-table tbody").innerHTML = rows.map(s => `<tr>
+    <td class="namecell" title="${escapeAttr(s.name)}">${escapeHtml(s.name)}</td>
+    <td class="num">${num(s.registered)}</td>
+    <td class="num">${num(s.attended)}</td>
+    <td class="num">${pct(s.attendRate)}</td>
+    <td class="num">${num(s.purchases)}</td>
+    <td class="num"><span class="ratebar"><i style="width:${Math.max(2, s.purchaseRate * 700)}px"></i>${pct(s.purchaseRate)}</span></td>
+  </tr>`).join("");
+}
+
+function hbars(el, rows, rateKey) {
+  const max = Math.max(...rows.map(r => r[rateKey]), 0.001);
+  el.innerHTML = rows.map(r => `<div class="hrow">
+    <div class="lab">${r.name}</div>
+    <div class="htrack"><div class="hfill" style="width:${(r[rateKey] / max) * 100}%"></div></div>
+    <div class="pct">${pct(r[rateKey])}</div>
+  </div>`).join("");
+}
+
+function weeks() {
+  const max = Math.max(...DATA.weeks.map(w => w.count), 1);
+  document.getElementById("weeks").innerHTML = DATA.weeks.map(w => {
+    const h = w.count ? Math.max(4, w.count / max * 150) : 0;
+    return `<div class="week" title="${w.label}: ${num(w.count)} registrations"><b style="height:${h}px"></b><span>${w.label}</span></div>`;
+  }).join("");
+}
+
+function buyers() {
+  const q = document.getElementById("buyer-filter").value.trim().toLowerCase();
+  const rows = DATA.buyers.filter(b => !q || [b.session, b.channel, b.campaign, b.creative, b.purchased].join(" ").toLowerCase().includes(q));
+  document.querySelector("#buyers tbody").innerHTML = rows.map(b => `<tr>
+    <td>${b.buyer}</td><td>${b.purchased}</td><td>${b.session}</td>
+    <td class="num">${num(b.minutes)}</td><td>${escapeHtml(b.channel)}</td>
+    <td class="namecell" title="${escapeAttr(b.campaign)}">${escapeHtml(b.campaign)}</td>
+    <td class="namecell" title="${escapeAttr(b.creative)}">${escapeHtml(b.creative)}</td>
+  </tr>`).join("") || `<tr><td colspan="7">No buyers match that filter.</td></tr>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+function theme() {
+  const saved = localStorage.getItem("tt-theme") || "auto";
+  applyTheme(saved);
+  document.querySelectorAll(".theme button").forEach(btn => {
+    btn.addEventListener("click", () => applyTheme(btn.dataset.theme));
+  });
+}
+function applyTheme(mode) {
+  if (mode === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", mode);
+  localStorage.setItem("tt-theme", mode);
+  document.querySelectorAll(".theme button").forEach(btn => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.theme === mode));
+  });
+}
+
+document.getElementById("session-table").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  const key = btn.dataset.sort;
+  if (sessionSort.key === key) sessionSort.dir *= -1;
+  else sessionSort = { key, dir: key === "name" ? 1 : -1 };
+  renderSessionTable();
+});
+["level", "sort", "limit"].forEach(id => document.getElementById(id).addEventListener("change", sourceRows));
+document.getElementById("buyer-filter").addEventListener("input", buyers);
+
+lede(); cards(); sessions(); renderSessionTable(); sourceRows();
+hbars(document.getElementById("watch"), DATA.watch, "rate");
+hbars(document.getElementById("lead"), DATA.lead, "rate");
+weeks(); buyers(); theme();
+</script>
+</body>
+</html>

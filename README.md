@@ -9,3 +9,5 @@ Internal dashboards for New Reach. Each one lives in its own folder with its own
 | [`webinar-replay-registration/`](webinar-replay-registration/) | Webinar Replay (Like LIVE) registration SOP for all six brands: shared flow plus EverWebinar numbers, Close workspaces, emoji sets, AC, SMS, SDR. Static HTML — open `index.html`. |
 | [`change-calendar/`](change-calendar/) | Day-by-day log of Cursor changes: platform, what changed, and downstream impact. Static HTML — open `index.html`. |
 | [`tc-like-live-attribution/`](tc-like-live-attribution/) | TC LIKE-LIVE registrations vs. Top Tier Close Signed Up within 7 days of watching. Snapshot November 9, 2026. [Live page](https://haileynre.github.io/tc-like-live-attribution/). |
+| [`like-live-attribution/`](like-live-attribution/) | Comparison of the brand like-live attribution pages. Top Tier and Zero Down are live. [Live page](https://haileynre.github.io/like-live-attribution/). |
+| [`zdb-like-live-attribution/`](zdb-like-live-attribution/) | ZDB LIKE-LIVE (#48) registrations in 2026 vs. Zero Down Close Signed Up within 7 days of watching. [Live page](https://haileynre.github.io/zdb-like-live-attribution/). |
